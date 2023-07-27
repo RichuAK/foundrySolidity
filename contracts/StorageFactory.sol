@@ -11,10 +11,16 @@ contract StorageFactory {
     //uint256 public favoriteNumber
     //datatype visibility variableName
     //similarly:
-    SimpleStorage public simpleStorage;
+    // SimpleStorage public simpleStorage;
+
+    // list of contracts
+    SimpleStorage[] public listOfSimpleStorage;
 
     function createSimpleStorageContract() public {
         // deploys a new SimpleStorage contract and assigns to simpleStorage variable
-        simpleStorage = new SimpleStorage();
+        // simpleStorage = new SimpleStorage();
+        // declaring and assigning the variable in one go:
+        SimpleStorage simpleStorage = new SimpleStorage();
+        listOfSimpleStorage.push(simpleStorage);
     }
 }
