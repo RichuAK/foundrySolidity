@@ -45,6 +45,10 @@ contract FundMe {
             addressToAmountFunded[funder] = 0;
         }
 
+        // re-initializing funders as an address array with just the first element.
+        // another way to use the new keyword, in addition to contract deployment.
+        funders = new address[](0);
+
         // ways of transferring money
         // refer to Solidity-by-Example for in-depth walk throughs
 
