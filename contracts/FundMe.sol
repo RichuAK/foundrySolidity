@@ -11,21 +11,24 @@ contract FundMe {
     using PriceConverter for uint256;
 
     // to be set as the owner in constructor
-    address public owner;
+    // declared as immutable since it won't be changed
+    // different from constant since the value is set in a function, rather than outside everything
+    address public immutable i_owner;
 
     // constructor, executed with the contract creation transaction
     constructor() {
-        owner = msg.sender;
+        i_owner = msg.sender;
     }
 
     // modifier that sets the modifying logic for repeated admin checks
     modifier onlyOwner() {
-        require(msg.sender == owner, "Trespassing! You're not the owner");
+        require(msg.sender == i_owner, "Trespassing! You're not the owner");
         _;
     }
 
     // 10 dollars, with 18 zeros for the Wei conversion math to work in later arithmetic
-    uint256 public minimumUsd = 10e18;
+    // stored as a constant to save gas. Since it won't be changed anywhere
+    uint256 public constant MINIMUM_USD = 10e18;
 
     // list of addresses that have sent funds
     address[] public funders;
@@ -40,7 +43,7 @@ contract FundMe {
         // check whether there's more than a minimum money being donated. Revert otherwise.
         // notice the .method below: 'msg.value' is a uint256, so you access 'convertEthtoUSD as an extended method
         require(
-            msg.value.convertEthToUSD() >= minimumUsd,
+            msg.value.convertEthToUSD() >= MINIMUM_USD,
             "Less than 10 dollars, you're too cheap!"
         );
         // update the list of funders who've sent money
