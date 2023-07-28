@@ -6,6 +6,9 @@ import {PriceConverter} from "./PriceConverter.sol";
 
 //        ^ always go for named imports
 
+// custom error, saves gas. New Solidity feature
+error Failure();
+
 contract FundMe {
     // attach the library for the datatype. This makes all the methods in the library implicit to the datatype
     using PriceConverter for uint256;
@@ -91,6 +94,10 @@ contract FundMe {
         (bool callSuccess, ) = payable(msg.sender).call{
             value: address(this).balance
         }("");
-        require(callSuccess, "Call failed!");
+        // this is using the custom error declared way up above, instead of the old require
+        if (!callSuccess) {
+            revert Failure();
+        }
+        // require(callSuccess, "Call failed!");
     }
 }
