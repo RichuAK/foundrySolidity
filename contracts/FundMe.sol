@@ -34,4 +34,42 @@ contract FundMe {
         // update their donation records.
         addressToAmountFunded[msg.sender] += msg.value;
     }
+
+    // withdrawing all the funds in the contract and re-initializing the records
+    function withdraw() public {
+        // looping through the funders array
+        for (uint256 index = 0; index < funders.length; index++) {
+            // getting the key (address)
+            address funder = funders[index];
+            // blindly updating the value to zero
+            addressToAmountFunded[funder] = 0;
+        }
+
+        // ways of transferring money
+        // refer to Solidity-by-Example for in-depth walk throughs
+
+        // via 'transfer'
+        // typecast the reciever address into a payable address, transfer the whole balance.
+        // transaction reverts if the method fails.
+        /* 
+        payable(msg.sender).transfer(address(this).balance); 
+        */
+
+        // via 'send'
+        // transaction won't revert if the method fails. But returns a bool
+        // check the bool and do accordingly!
+        /*
+        bool success = payable(msg.sender).send(address(this).balance);
+        require(success, "sending failed!");
+        */
+
+        // via 'call'
+        // a low level method, extremely powerful and useful, if you know what you're doing!!
+        // can call any method in any contract, anywhere.
+        // returns a bool and bytes array, we're only interested in the bool now
+        (bool callSuccess, ) = payable(msg.sender).call{
+            value: address(this).balance
+        }("");
+        require(callSuccess, "Call failed!");
+    }
 }
