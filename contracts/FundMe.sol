@@ -100,4 +100,13 @@ contract FundMe {
         }
         // require(callSuccess, "Call failed!");
     }
+
+    // two special functions to handle stray transactions hitting the contract
+    receive() external payable {
+        fund();
+    }
+
+    fallback() external payable {
+        fund();
+    }
 }
