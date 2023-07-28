@@ -10,6 +10,20 @@ contract FundMe {
     // attach the library for the datatype. This makes all the methods in the library implicit to the datatype
     using PriceConverter for uint256;
 
+    // to be set as the owner in constructor
+    address public owner;
+
+    // constructor, executed with the contract creation transaction
+    constructor() {
+        owner = msg.sender;
+    }
+
+    // modifier that sets the modifying logic for repeated admin checks
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Trespassing! You're not the owner");
+        _;
+    }
+
     // 10 dollars, with 18 zeros for the Wei conversion math to work in later arithmetic
     uint256 public minimumUsd = 10e18;
 
@@ -36,7 +50,7 @@ contract FundMe {
     }
 
     // withdrawing all the funds in the contract and re-initializing the records
-    function withdraw() public {
+    function withdraw() public onlyOwner {
         // looping through the funders array
         for (uint256 index = 0; index < funders.length; index++) {
             // getting the key (address)
