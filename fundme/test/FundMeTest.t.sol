@@ -11,7 +11,8 @@ contract FundMeTest is Test {
 
     // this setUp method runs first everytime you run test
     function setUp() external {
-        fundMe = new FundMe();
+        // passing in the Sepolia Address for PriceConverter
+        fundMe = new FundMe(0x694AA1769357215DE4FAC081bf1f309aDC325306);
     }
 
     function testMinimumDollarisFive() public {
@@ -27,5 +28,11 @@ contract FundMeTest is Test {
         console.log(msg.sender);
         // assert succeeds when address(this) is checked against owner
         assertEq(fundMe.i_owner(), address(this));
+    }
+
+    function testVersionofAggregator() public {
+        uint256 version = fundMe.getVersion();
+        console.log("Testing the version of AggregatorV3Interface");
+        assertEq(version, 4);
     }
 }
