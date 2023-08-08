@@ -15,7 +15,17 @@ contract FundMeTest is Test {
     }
 
     function testMinimumDollarisFive() public {
-        console.log("Asserting..");
+        console.log("Asserting MinUSD..");
         assertEq(fundMe.MINIMUM_USD(), 5e18);
+    }
+
+    function testSenderisOwner() public {
+        console.log("Checking Owner..");
+        // FunMe contract owner is the test contract in this scenario
+        // and msg.sender is you. So assert is gonna fail
+        console.log(fundMe.i_owner());
+        console.log(msg.sender);
+        // assert succeeds when address(this) is checked against owner
+        assertEq(fundMe.i_owner(), address(this));
     }
 }
