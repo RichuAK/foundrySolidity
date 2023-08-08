@@ -25,3 +25,7 @@
 - `Integration Testing` is when you're testing how one part interacts and integrates with other parts of the code.
 - `Forked Testing` is testing the (entire) code on simulated or real environment.
 - `Staging Testing` is where you're testing the code in a real environment, but which is not production. Testnet Launch is an example.
+
+### Miscellaneous
+
+- Code Refactoring: making this modular and flexible, less hardcoded things. Easy maintenance.
