@@ -22,6 +22,7 @@ contract HelperConfig is Script {
 
     // the variable that's gonna store all the networkconfigs
     // declared as public so others can access the getter function
+    // going to be a mock if anvil, otherwise grab addresses via chainid accordingly
     NetworkConfig public activeNetworkConfig;
 
     // function that's gonna return the NetworkConfig struct for Sepolia
