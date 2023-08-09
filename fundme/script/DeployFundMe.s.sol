@@ -10,10 +10,14 @@ contract DeployFundMe is Script {
         HelperConfig helperConfig = new HelperConfig();
         address _priceFeed = helperConfig.activeNetworkConfig();
 
+        // anytihng before Bradcast is not gonna incur gas,
+        // hence the declaration and assigning of HelperCongig prior
         vm.startBroadcast();
         // not assigning the new FundMe to any fundMe variable since we're not gonna use it further
         // you just need to deploy, that's it
         FundMe fundMe = new FundMe(_priceFeed);
+        // but assigning and returning in the new paradigm so it can be used in testing
+        // define the rules so you can break them later, of course
         vm.stopBroadcast();
         return fundMe;
     }
