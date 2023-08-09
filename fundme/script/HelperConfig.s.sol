@@ -9,7 +9,7 @@ contract HelperConfig is Script {
     }
 
     constructor() {
-        if (block.chainid == 1115511) {
+        if (block.chainid == 11155111) {
             activeNetworkConfig = getSepoliaAddress();
         }
     }
