@@ -40,4 +40,13 @@ contract FundMeTest is Test {
         console.log("Testing the version of AggregatorV3Interface");
         assertEq(version, 4);
     }
+
+    function testFundFailsWithoutEnoughEth() public {
+        // just texting expectRevert
+        vm.expectRevert();
+        uint256 a = 5;
+        if (a == 5) {
+            revert();
+        }
+    }
 }
