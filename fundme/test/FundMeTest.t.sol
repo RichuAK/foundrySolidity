@@ -46,11 +46,16 @@ contract FundMeTest is Test {
     }
 
     function testFundFailsWithoutEnoughEth() public {
-        // just texting expectRevert
+        // testing expectRevert
         vm.expectRevert();
-        uint256 a = 5;
-        if (a == 5) {
-            revert();
-        }
+        // this should revert since there's no funds being sent.
+        // And if it reverts, the test succeeds
+        fundMe.fund();
+
+        // Like this code snippet:
+        // uint256 a = 5;
+        // if (a == 5) {
+        //     revert();
+        // }
     }
 }
