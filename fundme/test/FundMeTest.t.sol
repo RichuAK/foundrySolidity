@@ -93,6 +93,7 @@ contract FundMeTest is Test {
     function testOnlyOwnerCanWithdraw() public {
         vm.prank(USER);
         fundMe.fund{value: SEND_VALUE}();
+        // this ^ could have been the modifier, but explicitly written to show vm.prank multiple calls
 
         vm.expectRevert();
         // prank needs to be called again since prank only works for the very text transaction
