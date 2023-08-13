@@ -13,6 +13,10 @@ contract FundMeTest is Test {
     // makes an address and assigns to USER.
     // foundry stuff. Adress is created at complie time, so can't be constant (?)
     address USER = makeAddr("user");
+    // contant to set the balance of USER in the beginning. Declared to avoid magic numbers
+    uint256 constant STARTING_BALANCE = 10e18; // 10 ether, basically
+    // a transaction value. Ether gets converted to wei so no decimals in the end
+    uint256 constant SEND_VALUE = 0.1 ether;
 
     // this setUp method runs first everytime you run test
     function setUp() external {
@@ -20,6 +24,8 @@ contract FundMeTest is Test {
         // fundMe = new FundMe(0x694AA1769357215DE4FAC081bf1f309aDC325306);
         DeployFundMe deployFundme = new DeployFundMe();
         fundMe = deployFundme.run();
+        // cheatcode to set the balance of the madeup address
+        vm.deal(USER, STARTING_BALANCE);
     }
 
     function testMinimumDollarisFive() public {
@@ -57,5 +63,18 @@ contract FundMeTest is Test {
         // if (a == 5) {
         //     revert();
         // }
+    }
+
+    // function to check whether the database is correctly updated
+    function testFundMethodUpdatesMapping() public {
+        // another cheatcode in the test suite
+        // pranks the next transaction, so that it appears as if it's sent by USER
+        vm.prank(USER);
+        // calls the function as if USER is msg.sender
+        fundMe.fund{value: SEND_VALUE}();
+        // default getter fucntio for addressToAmountFunded
+        // declare it as private and write explicit getter functions to save gas
+        uint256 sent_value = fundMe.addressToAmountFunded(USER);
+        assertEq(sent_value, SEND_VALUE);
     }
 }
