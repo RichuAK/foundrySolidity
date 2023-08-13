@@ -100,4 +100,12 @@ contract FundMeTest is Test {
         vm.prank(USER);
         fundMe.withdraw();
     }
+
+    // modifier to clean up the code
+    // things that tend to get repeated again and again
+    modifier funded() {
+        vm.prank(USER);
+        fundMe.fund{value: SEND_VALUE}();
+        _;
+    }
 }
