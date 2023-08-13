@@ -10,6 +10,10 @@ contract FundMeTest is Test {
     // declaring here for global scope in the contract
     FundMe fundMe;
 
+    // makes an address and assigns to USER.
+    // foundry stuff. Adress is created at complie time, so can't be constant (?)
+    address USER = makeAddr("user");
+
     // this setUp method runs first everytime you run test
     function setUp() external {
         // passing in the Sepolia Address for PriceConverter
