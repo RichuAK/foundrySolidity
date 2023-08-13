@@ -77,4 +77,27 @@ contract FundMeTest is Test {
         uint256 sent_value = fundMe.addressToAmountFunded(USER);
         assertEq(sent_value, SEND_VALUE);
     }
+
+    // test to see the array of funders is getting updated
+    function testFunderGetsAddedToFundersArray() public {
+        vm.prank(USER);
+        fundMe.fund{value: SEND_VALUE}();
+        // each test is run independently, after discarding everything prior and then running setup()
+        // that's why we have to invoke fund() again and USER is at the 0th index
+        // everything's sorta at the genesis state when each of these tests are run
+        address funder = fundMe.funders(0);
+        assertEq(funder, USER);
+    }
+
+    // function to see if only the Owner can withdraw
+    function testOnlyOwnerCanWithdraw() public {
+        vm.prank(USER);
+        fundMe.fund{value: SEND_VALUE}();
+
+        vm.expectRevert();
+        // prank needs to be called again since prank only works for the very text transaction
+        // it's not set for the entire method scope, just the next transaction
+        vm.prank(USER);
+        fundMe.withdraw();
+    }
 }
