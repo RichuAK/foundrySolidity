@@ -109,4 +109,103 @@ contract FundMeTest is Test {
         fundMe.fund{value: SEND_VALUE}();
         _;
     }
+
+    // my version of the test as an exercise of thinking through
+    function testWithdrawWithASingleFunder_myVersion() public funded {
+        // Arrange
+        // so we can track the owner's balance.
+        // tip: this contract is not the owner, and deployFundMe from setup() is not available here either
+        // also, again, default getter is not recommended; set variables private and write explicit getters
+        uint256 oldBalance = address(fundMe.i_owner()).balance;
+        // Act
+        console.log("Testing Successful Withdraw");
+        vm.prank(fundMe.i_owner());
+        fundMe.withdraw();
+        // Assert
+        assertEq((address(fundMe.i_owner()).balance - oldBalance), SEND_VALUE);
+    }
+
+    // Patrick's version, after having watched the video
+    function testWithdrawWithASingleFunder_patrick() public funded {
+        // Arrange
+        // Too lazy to write a getter function in fundMe.
+        // And it'll break my version; so keeping it as is
+        uint256 startingOwnerBalance = address(fundMe.i_owner()).balance;
+        uint256 startingFundMeBalance = address(fundMe).balance;
+
+        // Act
+        console.log("Testing Successful Withdraw via GOAT");
+        vm.prank(fundMe.i_owner());
+        fundMe.withdraw();
+        // Assert
+        uint256 endingOwnerBalance = address(fundMe.i_owner()).balance;
+        uint256 endingFundMeBalance = address(fundMe).balance;
+        assertEq(endingFundMeBalance, 0);
+        assertEq(
+            endingOwnerBalance,
+            startingOwnerBalance + startingFundMeBalance
+        );
+    }
+
+    // my version of the test, before watching the GOAT
+    function testWithdrawFromMultipleFunders_myVersion() public funded {
+        // Arrange
+        address USER2 = makeAddr("user2");
+        vm.deal(USER2, STARTING_BALANCE);
+        vm.prank(USER2);
+        fundMe.fund{value: SEND_VALUE}();
+        uint256 startingOwnerBalance = address(fundMe.i_owner()).balance;
+        uint256 startingFundMeBalance = address(fundMe).balance;
+
+        // Act
+        console.log("Testing Successful Withdraw after multiple funders");
+        vm.prank(fundMe.i_owner());
+        fundMe.withdraw();
+        // Assert
+        uint256 endingOwnerBalance = address(fundMe.i_owner()).balance;
+        uint256 endingFundMeBalance = address(fundMe).balance;
+        assertEq(endingFundMeBalance, 0);
+        assertEq(
+            endingOwnerBalance,
+            startingOwnerBalance + startingFundMeBalance
+        );
+        assertEq(endingOwnerBalance - startingOwnerBalance, 2 * SEND_VALUE);
+    }
+
+    // GOAT version
+    function testWithdrawFromMultipleFunders_Patrick() public funded {
+        // Arrange
+
+        // it's uint160 is because of Solidity update.
+        // typecasting address and uint256 is deprecated, it's 160 now
+        uint160 numberofFunders = 10;
+        // no reason for 160 here, just making things symmetrical
+        uint160 startingFunderIndex = 1;
+        // loop to bring them all alive (make the accounts and fund)
+        for (uint160 i = startingFunderIndex; i < numberofFunders; i++) {
+            // instead of makeAddr and vm.deal, we use a different paradigm
+            // hoax is part of foundry package, so don't need to use vm
+            // it makes the account and funds the too.
+            hoax(address(i), SEND_VALUE);
+            fundMe.fund{value: SEND_VALUE}();
+        }
+        uint256 startingOwnerBalance = address(fundMe.i_owner()).balance;
+        uint256 startingFundMeBalance = address(fundMe).balance;
+
+        // Act
+
+        // everything between startPrank and stopPrank will be as if the transactions are sent by the pranker
+        vm.startPrank(fundMe.i_owner());
+        fundMe.withdraw();
+        vm.stopPrank();
+
+        // Assert
+
+        // instead of assertEq, we use assert
+        assert(address(fundMe).balance == 0);
+        assert(
+            address(fundMe.i_owner()).balance ==
+                startingOwnerBalance + startingFundMeBalance
+        );
+    }
 }
