@@ -29,3 +29,9 @@
 ### Miscellaneous
 
 - Code Refactoring: making this modular and flexible, less hardcoded things. Easy maintenance.
+
+### Arrange-Act-Assert Testing methodology
+
+- `Arrange` or setup the test.
+- `Act` the things you want. Do stuff.
+- `Assert` the test.
