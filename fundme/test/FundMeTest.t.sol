@@ -135,8 +135,15 @@ contract FundMeTest is Test {
 
         // Act
         console.log("Testing Successful Withdraw via GOAT");
+        // vm.txGasPrice simulates gas costs in Anvil. It's all zero cost otherwise.
+        // GAS_PRICE is a constant to evade magic numbers, but not declared in this since it's commented
+        // vm.txGasPrice(GAS_PRICE);
+        // uint256 gasStart = gasleft();
         vm.prank(fundMe.i_owner());
         fundMe.withdraw();
+        // uint256 gasEnd = gasleft();
+        // tx.gasprice is a solidity native:
+        // uint256 gasUsed = (gasStart - gasEnd) * tx.gasprice;
         // Assert
         uint256 endingOwnerBalance = address(fundMe.i_owner()).balance;
         uint256 endingFundMeBalance = address(fundMe).balance;
