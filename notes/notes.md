@@ -7,6 +7,7 @@
 - Running `cast --to-base 0x714e1 dec`
   will convert the 0x714e1 to its decimal value, which is 464097. Run `cast --help` for more.
 - `chisel` is a command line tool to execute solidity inline, like Python terminal execution. Run `chisel` and then type `!help` to get more.
+- `forge snapshot --mt testFunctionName` gives a snapshot file with the gas used for that particular test function.
 
 ### Third Web
 
