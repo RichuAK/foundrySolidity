@@ -144,6 +144,7 @@ contract FundMeTest is Test {
         // uint256 gasEnd = gasleft();
         // tx.gasprice is a solidity native:
         // uint256 gasUsed = (gasStart - gasEnd) * tx.gasprice;
+        // console.log("Gas Used: ", gasUsed);
         // Assert
         uint256 endingOwnerBalance = address(fundMe.i_owner()).balance;
         uint256 endingFundMeBalance = address(fundMe).balance;
