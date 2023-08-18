@@ -50,4 +50,10 @@ withdraw:
 
 #My Adds - Richu
 # $ cast call 0x6b175474e89094c44da98b954eedeac495271d0f "totalSupply()(uint256)" --rpc-url https://eth-mainnet.alchemyapi.io/v2/Lc7oIGYeL_QvInzI0Wiu_pOZZDEKBrdf
-8603853182003814300330472690
+#8603853182003814300330472690
+
+deployL7:
+	@forge script script/DeployLessonSevenSolution.s.sol:DeployLessenSevenSolution $(NETWORK_ARGS)
+
+solve:
+	@forge script script/Interactions.s.sol:FindSolutionForLessonSeven --ffi $(NETWORK_ARGS)
