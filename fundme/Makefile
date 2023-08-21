@@ -62,4 +62,4 @@ withdraw:
 # 	@forge script script/ForkLoad.s.sol:GetPrivateData --ffi $(NETWORK_ARGS)
 
 solveLesson:
-	@forge script script/SolveLessonSeven.s.sol:GetPrivateData --ffi $(NETWORK_ARGS)
+	@forge script script/SolveLessonSeven.s.sol:SolveLessonSeven --ffi $(NETWORK_ARGS)
