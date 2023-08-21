@@ -5,7 +5,8 @@ import {Script, console} from "forge-std/Script.sol";
 
 import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
 import {FundMe} from "../src/FundMe.sol";
-import {LessonSevenSolution} from "../src/LessonSevenSolution.sol";
+
+// import {LessonSevenSolution} from "../src/LessonSevenSolution.sol";
 
 // function interactWithPreviouslyDeployedContracts() public {
 //     address contractAddress = DevOpsTools.get_most_recent_deployment("MyContract", block.chainid);
@@ -49,24 +50,25 @@ contract WithdrawFundMe is Script {
     }
 }
 
-contract FindSolutionForLessonSeven is Script {
-    function findSolutionForLessonSeven(address mostRecentlyDeployed) public {
-        vm.startBroadcast();
-        console.log("Attempting to find Solution for Lesson Seven");
-        LessonSevenSolution(mostRecentlyDeployed).solveLessonSeven();
-        vm.stopBroadcast();
-    }
+// Wrong Approach. Didn't Require
+// contract FindSolutionForLessonSeven is Script {
+//     function findSolutionForLessonSeven(address mostRecentlyDeployed) public {
+//         vm.startBroadcast();
+//         console.log("Attempting to find Solution for Lesson Seven");
+//         LessonSevenSolution(mostRecentlyDeployed).solveLessonSeven();
+//         vm.stopBroadcast();
+//     }
 
-    // Hard coding the deployed address to skip ffi setting. Not recommended is you want to rely on DevOps
-    function run() external {
-        address lessonSevenSolutionAddresses = DevOpsTools
-            .get_most_recent_deployment("LessonSevenSolution", block.chainid);
-        findSolutionForLessonSeven(lessonSevenSolutionAddresses);
-    }
+//     // Hard coding the deployed address to skip ffi setting. Not recommended is you want to rely on DevOps
+//     function run() external {
+//         address lessonSevenSolutionAddresses = DevOpsTools
+//             .get_most_recent_deployment("LessonSevenSolution", block.chainid);
+//         findSolutionForLessonSeven(lessonSevenSolutionAddresses);
+//     }
 
-    // function run() external {
-    //     // address lessonSevenSolutionAddresses = DevOpsTools
-    //     //     .get_most_recent_deployment("LessonSevenSolution", block.chainid);
-    //     findSolutionForLessonSeven(0x75ABE744b11FC62e2FBF66e51f858783e0Eb822C);
-    // }
-}
+//     // function run() external {
+//     //     // address lessonSevenSolutionAddresses = DevOpsTools
+//     //     //     .get_most_recent_deployment("LessonSevenSolution", block.chainid);
+//     //     findSolutionForLessonSeven(0x75ABE744b11FC62e2FBF66e51f858783e0Eb822C);
+//     // }
+// }

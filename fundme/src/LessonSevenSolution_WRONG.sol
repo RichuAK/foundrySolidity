@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+// THIS DOES NOT WORK!
+
 contract LessonSeven {
     function solveChallenge(
         uint256 valueAtStorageLocationSevenSevenSeven,
@@ -66,3 +68,5 @@ contract LessonSevenSolution {
     //     return result;
     // }
 }
+
+// THIS DOES NOT WORK!
