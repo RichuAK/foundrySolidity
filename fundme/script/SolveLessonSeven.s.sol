@@ -16,21 +16,23 @@ contract SolveLessonSeven is Script {
 
     function run() external {
         uint256 privateData = getPrivateData();
+        // consoles used for debugging
         console.log("The Data: ", privateData);
         console.log("Attempting to find Solution for Lesson Seven");
         console.log("From address: ", msg.sender);
-        vm.prank(msg.sender);
+        // sets the msg.sender as the challenge solver, instead of this contract : for _safeMint() reasons
+        // broadcast instead of prank to hit the actual blockchain
+        vm.broadcast(msg.sender);
         LessonSeven lessonSeven = LessonSeven(LessonSevenAddress);
         lessonSeven.solveChallenge(privateData, "richuak1");
     }
 
     function getPrivateData() internal view returns (uint256) {
+        // vm.load() reads the storage at the given slot
         bytes32 privateVariable = vm.load(
             LessonSevenAddress,
             bytes32(uint256(777))
         );
-
-        // console.log("The private data: ", uint256(privateVariable));
         return uint256(privateVariable);
     }
 }
