@@ -97,6 +97,8 @@ contract Raffle is VRFConsumerBaseV2 {
         emit EnteredRaffle(msg.sender);
     }
 
+    // Needs to do 2 things (or 3?) as two different transactions
+    // Wait and get a random number from the oracle, and then get pick the winner based on that VRF
     function pickWinner() external {
         if ((block.timestamp - s_lastPickTime) < i_interval) {
             revert();
