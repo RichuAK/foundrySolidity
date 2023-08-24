@@ -40,6 +40,15 @@ contract Raffle is VRFConsumerBaseV2 {
     // naming convention with the contract name prefix, for easy debugging out there
     error Raffle__NotEnoughEthSent();
     error Raffle__PriceDistributionFailed();
+    error Raffle__NotOpen();
+
+    /**Type Declarations */
+    // enum special derived datatype, as a set of flags of sorts
+    // https://docs.soliditylang.org/en/v0.8.21/types.html#enums
+    enum RaffleState {
+        OPEN,
+        CALCULATING
+    }
 
     /**
      * @dev all state variables. i_ are immutables, s_ are storage variables
@@ -51,8 +60,10 @@ contract Raffle is VRFConsumerBaseV2 {
     uint256 private immutable i_interval;
     address payable[] private s_players;
     uint256 private s_lastPickTime;
+    RaffleState private s_raffleState;
 
-    // Coordinator Variables
+    // VRFCoordinator Variables
+    // Clustered by me, not standard
     VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
     bytes32 private immutable i_gasLane; //keyHash, better named as gasLane
     uint64 private immutable i_subscriptionId;
@@ -77,6 +88,7 @@ contract Raffle is VRFConsumerBaseV2 {
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinator);
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
+        s_raffleState = RaffleState.OPEN;
     }
 
     /** Events */
@@ -92,6 +104,9 @@ contract Raffle is VRFConsumerBaseV2 {
         if (msg.value < i_entranceFee) {
             revert Raffle__NotEnoughEthSent();
         }
+        if (s_raffleState != RaffleState.OPEN) {
+            revert Raffle__NotOpen();
+        }
         // pushing the address into the dynamic array
         s_players.push(payable(msg.sender));
         emit EnteredRaffle(msg.sender);
@@ -103,6 +118,7 @@ contract Raffle is VRFConsumerBaseV2 {
         if ((block.timestamp - s_lastPickTime) < i_interval) {
             revert();
         }
+        s_raffleState = RaffleState.CALCULATING;
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
@@ -122,6 +138,7 @@ contract Raffle is VRFConsumerBaseV2 {
         if (!success) {
             revert Raffle__PriceDistributionFailed();
         }
+        s_raffleState = RaffleState.OPEN;
     }
 
     // Getter Functions
