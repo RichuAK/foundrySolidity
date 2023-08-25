@@ -137,7 +137,6 @@ contract Raffle is VRFConsumerBaseV2 {
         address payable winner = s_players[indexOfWinner];
         // reinitialisations of states for the next round
         s_raffleState = RaffleState.OPEN;
-        emit PickedWinner(winner);
         s_players = new address payable[](0);
         s_lastTimeStamp = block.timestamp;
         // end of reinitializations of states
@@ -145,6 +144,7 @@ contract Raffle is VRFConsumerBaseV2 {
         if (!success) {
             revert Raffle__PriceDistributionFailed();
         }
+        emit PickedWinner(winner);
     }
 
     // Getter Functions
