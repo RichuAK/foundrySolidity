@@ -59,7 +59,7 @@ contract Raffle is VRFConsumerBaseV2 {
     uint256 private immutable i_entranceFee;
     uint256 private immutable i_interval;
     address payable[] private s_players;
-    uint256 private s_lastPickTime;
+    uint256 private s_lastTimeStamp;
     RaffleState private s_raffleState;
 
     // VRFCoordinator Variables
@@ -70,6 +70,10 @@ contract Raffle is VRFConsumerBaseV2 {
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private immutable i_callbackGasLimit;
     uint32 private constant NUM_WORDS = 1;
+
+    /**Event Declarations */
+    event EnteredRaffle(address indexed player);
+    event PickedWinner(address indexed winner);
 
     /**
      * @param entranceFee to set the i_entranceFee at deployment
@@ -84,15 +88,12 @@ contract Raffle is VRFConsumerBaseV2 {
     ) VRFConsumerBaseV2(vrfCoordinator) {
         i_entranceFee = entranceFee;
         i_interval = interval;
-        s_lastPickTime = block.timestamp;
+        s_lastTimeStamp = block.timestamp;
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinator);
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
         s_raffleState = RaffleState.OPEN;
     }
-
-    /** Events */
-    event EnteredRaffle(address indexed player);
 
     /**
      * @dev payable function to pay and buy the ticket, so users can enter the competition
@@ -115,7 +116,7 @@ contract Raffle is VRFConsumerBaseV2 {
     // Needs to do 2 things (or 3?) as two different transactions
     // Wait and get a random number from the oracle, and then get pick the winner based on that VRF
     function pickWinner() external {
-        if ((block.timestamp - s_lastPickTime) < i_interval) {
+        if ((block.timestamp - s_lastTimeStamp) < i_interval) {
             revert();
         }
         s_raffleState = RaffleState.CALCULATING;
@@ -134,11 +135,16 @@ contract Raffle is VRFConsumerBaseV2 {
     ) internal override {
         uint256 indexOfWinner = randomWords[0] % s_players.length;
         address payable winner = s_players[indexOfWinner];
+        // reinitialisations of states for the next round
+        s_raffleState = RaffleState.OPEN;
+        emit PickedWinner(winner);
+        s_players = new address payable[](0);
+        s_lastTimeStamp = block.timestamp;
+        // end of reinitializations of states
         (bool success, ) = winner.call{value: address(this).balance}("");
         if (!success) {
             revert Raffle__PriceDistributionFailed();
         }
-        s_raffleState = RaffleState.OPEN;
     }
 
     // Getter Functions
