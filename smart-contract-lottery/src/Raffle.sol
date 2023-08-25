@@ -139,12 +139,12 @@ contract Raffle is VRFConsumerBaseV2 {
         s_raffleState = RaffleState.OPEN;
         s_players = new address payable[](0);
         s_lastTimeStamp = block.timestamp;
+        emit PickedWinner(winner);
         // end of reinitializations of states
         (bool success, ) = winner.call{value: address(this).balance}("");
         if (!success) {
             revert Raffle__PriceDistributionFailed();
         }
-        emit PickedWinner(winner);
     }
 
     // Getter Functions
