@@ -41,6 +41,11 @@ contract Raffle is VRFConsumerBaseV2 {
     error Raffle__NotEnoughEthSent();
     error Raffle__PriceDistributionFailed();
     error Raffle__NotOpen();
+    error Raffle__UpkeepNotNeeded(
+        uint256 balance,
+        uint256 length,
+        RaffleState raffleState
+    );
 
     /**Type Declarations */
     // enum special derived datatype, as a set of flags of sorts
@@ -113,11 +118,51 @@ contract Raffle is VRFConsumerBaseV2 {
         emit EnteredRaffle(msg.sender);
     }
 
-    // Needs to do 2 things (or 3?) as two different transactions
+    // Refactoring into Chainlink Automation
+
+    /**
+     * @dev contract functions docs: https://docs.chain.link/chainlink-automation/flexible-upkeeps
+     * @dev The function that the ChainLink Automation nodes all to see if it's time to perform an upkeep.
+     * Conditions to be true for the function to return true:
+     * 1. Time interval has passed between raffle runs.
+     * 2. RaffleState is OPEN
+     * 3. The contract has ETH (sent by players)
+     * 4. (Implicit) The subscription is funded with LINK  - it is a service, after all.
+     */
+
+    function checkUpkeep(
+        bytes memory /* checkData */
+    )
+        public
+        view
+        returns (
+            bool upkeepNeeded,
+            bytes memory /* performData */ // naming (initializing) the return variable here
+        )
+    {
+        bool timeHasPassed = (block.timestamp - s_lastTimeStamp) >= i_interval;
+        bool raffleIsOpen = RaffleState.OPEN == s_raffleState;
+        bool hasBalance = address(this).balance > 0;
+        bool hasPlayers = s_players.length > 0;
+        upkeepNeeded = (timeHasPassed &&
+            raffleIsOpen &&
+            hasBalance &&
+            hasPlayers);
+        // no need to 'return upkeepNeeded' since it's initialized in the function declaration
+        // but, we'll be a bit explicit:
+        return (upkeepNeeded, "0x00"); // "0x00" is the blank bytes object, for the second variable
+    }
+
     // Wait and get a random number from the oracle, and then get pick the winner based on that VRF
-    function pickWinner() external {
-        if ((block.timestamp - s_lastTimeStamp) < i_interval) {
-            revert();
+    // Refactored with ChainLink automation
+    function performUpKeep(bytes calldata /* checkData */) external {
+        (bool upkeepNeeded, ) = checkUpkeep("");
+        if (!upkeepNeeded) {
+            revert Raffle__UpkeepNotNeeded(
+                address(this).balance,
+                s_players.length,
+                s_raffleState
+            );
         }
         s_raffleState = RaffleState.CALCULATING;
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
