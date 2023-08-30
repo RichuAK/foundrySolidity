@@ -11,6 +11,13 @@ contract RaffleTest is Test {
     Raffle raffle;
     HelperConfig helperConfig;
 
+    uint256 entranceFee;
+    uint256 interval;
+    address vrfCoordinator;
+    bytes32 gasLane;
+    uint64 subscriptionId;
+    uint32 callBackGasLimit;
+
     address PLAYER = makeAddr("player");
     uint256 public constant STARTING_BALANCE = 1 ether;
 
@@ -18,9 +25,28 @@ contract RaffleTest is Test {
         DeployRaffle deployRaffle = new DeployRaffle();
         (raffle, helperConfig) = deployRaffle.run();
         vm.deal(PLAYER, STARTING_BALANCE);
+        (
+            entranceFee,
+            interval,
+            vrfCoordinator,
+            gasLane,
+            subscriptionId,
+            callBackGasLimit
+        ) = helperConfig.activeNetworkConfig();
     }
 
-    function testRaffleState() public view {
+    function testRaffleInitializesInOpenState() public view {
         assert(raffle.getRaffleState() == Raffle.RaffleState.OPEN);
+    }
+
+    // entering raffle test
+    function testEnterRaffleRevertWhenNotPaid() public {
+        // Arrange
+        uint256 lessThanEntranceFee = raffle.getEntranceFee() - 100;
+        // console.log("Entrance fee:", raffle.getEntranceFee());
+        vm.prank(PLAYER);
+        // Act / Assert
+        vm.expectRevert(Raffle.Raffle__NotEnoughEthSent.selector);
+        raffle.enterRaffle{value: lessThanEntranceFee}();
     }
 }
