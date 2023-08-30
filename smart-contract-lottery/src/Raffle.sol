@@ -89,7 +89,8 @@ contract Raffle is VRFConsumerBaseV2 {
         uint256 interval,
         address vrfCoordinator,
         bytes32 gasLane,
-        uint64 subscriptionId
+        uint64 subscriptionId,
+        uint32 callBackGasLimit
     ) VRFConsumerBaseV2(vrfCoordinator) {
         i_entranceFee = entranceFee;
         i_interval = interval;
@@ -97,6 +98,7 @@ contract Raffle is VRFConsumerBaseV2 {
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinator);
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
+        i_callbackGasLimit = callBackGasLimit;
         s_raffleState = RaffleState.OPEN;
     }
 
