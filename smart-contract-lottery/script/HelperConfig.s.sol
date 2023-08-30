@@ -3,6 +3,7 @@
 pragma solidity ^0.8.21;
 
 import {Script} from "forge-std/Script.sol";
+import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 
 // import {Raffle} from "../src/Raffle.sol";
 
@@ -26,7 +27,7 @@ contract HelperConfig is Script {
         }
     }
 
-    function getSepoliaConfig() public view returns (NetworkConfig memory) {
+    function getSepoliaConfig() public pure returns (NetworkConfig memory) {
         return
             NetworkConfig({
                 entranceFee: 0.01 ether,
@@ -41,7 +42,26 @@ contract HelperConfig is Script {
     function getOrCreateAnvilConfig() public returns (NetworkConfig memory) {
         if (activeNetworkConfig.vrfCoordinator != address(0)) {
             return activeNetworkConfig;
-        } else {}
+        } else {
+            uint96 baseFee = 0.25 ether; //actually in LINK, for chainlink
+            uint96 gasPriceLink = 1e9; // 1 gwei LINK, again
+            vm.startBroadcast();
+            VRFCoordinatorV2Mock vrfCoordinatorMock = new VRFCoordinatorV2Mock(
+                baseFee,
+                gasPriceLink
+            );
+            vm.stopBroadcast();
+            activeNetworkConfig = NetworkConfig({
+                entranceFee: 0.01 ether,
+                interval: 30,
+                vrfCoordinator: address(vrfCoordinatorMock),
+                gasLane: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
+                subscriptionId: 0, // script will add this
+                callBackGasLimit: 500000 // 500,000 gas, should be enough
+            });
+
+            return activeNetworkConfig;
+        }
     }
 
     // getSepoliaConfig, getorCreateAnvilConfig
