@@ -20,6 +20,7 @@ contract RaffleTest is Test {
     bytes32 gasLane;
     uint64 subscriptionId;
     uint32 callBackGasLimit;
+    address linkToken;
 
     address PLAYER = makeAddr("player");
     uint256 public constant STARTING_BALANCE = 1 ether;
@@ -34,7 +35,8 @@ contract RaffleTest is Test {
             vrfCoordinator,
             gasLane,
             subscriptionId,
-            callBackGasLimit
+            callBackGasLimit,
+            linkToken
         ) = helperConfig.activeNetworkConfig();
     }
 
