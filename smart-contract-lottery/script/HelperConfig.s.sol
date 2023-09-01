@@ -15,6 +15,7 @@ contract HelperConfig is Script {
         bytes32 gasLane;
         uint64 subscriptionId;
         uint32 callBackGasLimit;
+        address linkToken;
     }
 
     NetworkConfig public activeNetworkConfig;
@@ -35,7 +36,8 @@ contract HelperConfig is Script {
                 vrfCoordinator: 0x8103B0A8A00be2DDC778e6e7eaa21791Cd364625,
                 gasLane: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c, //not provided in chainlink docs anymore?
                 subscriptionId: 0, // update this with custom subId
-                callBackGasLimit: 500000 // 500,000 gas, should be enough
+                callBackGasLimit: 500000, // 500,000 gas, should be enough
+                linkToken: 0x779877A7B0D9E8603169DdbD7836e478b4624789
             });
     }
 
@@ -57,7 +59,8 @@ contract HelperConfig is Script {
                 vrfCoordinator: address(vrfCoordinatorMock),
                 gasLane: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
                 subscriptionId: 0, // script will add this
-                callBackGasLimit: 500000 // 500,000 gas, should be enough
+                callBackGasLimit: 500000, // 500,000 gas, should be enough
+                linkToken: address(0) // edit this!
             });
 
             return activeNetworkConfig;
