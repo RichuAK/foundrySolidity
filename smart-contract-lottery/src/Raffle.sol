@@ -79,6 +79,7 @@ contract Raffle is VRFConsumerBaseV2 {
     /**Event Declarations */
     event EnteredRaffle(address indexed player);
     event PickedWinner(address indexed winner);
+    event RequestedRaffleWinner(uint256 indexed requestId);
 
     /**
      * @param entranceFee to set the i_entranceFee at deployment
@@ -167,13 +168,16 @@ contract Raffle is VRFConsumerBaseV2 {
             );
         }
         s_raffleState = RaffleState.CALCULATING;
-        i_vrfCoordinator.requestRandomWords(
+        uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
             REQUEST_CONFIRMATIONS,
             i_callbackGasLimit,
             NUM_WORDS
         );
+        // redundant, since there's a similar event in VRFCoordinatorMock already.
+        // but doing for testing purposes
+        emit RequestedRaffleWinner(requestId);
     }
 
     function fulfillRandomWords(
