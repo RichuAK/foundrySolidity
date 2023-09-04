@@ -6,6 +6,8 @@ import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {Raffle} from "../../src/Raffle.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 
 contract RaffleTest is Test {
     Raffle raffle;
@@ -58,7 +60,7 @@ contract RaffleTest is Test {
     function testEnterRaffleRevertsWhenNotPaidEnough() public {
         // Arrange
         uint256 lessThanEntranceFee = raffle.getEntranceFee() - 100;
-        // console.log("Entrance fee:", raffle.getEntranceFee());
+        console.log("Entrance fee:", raffle.getEntranceFee());
         vm.prank(PLAYER);
         // Act / Assert
         vm.expectRevert(Raffle.Raffle__NotEnoughEthSent.selector);
@@ -192,5 +194,94 @@ contract RaffleTest is Test {
             )
         );
         raffle.performUpKeep("");
+    }
+
+    function testPerformUpKeepUpdatesRaffleStateAndEmitsRequestId()
+        public
+        PlayerEnteredAndTimePassed
+    {
+        // Arrange is already done
+        // Act
+        vm.recordLogs();
+        raffle.performUpKeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        // all logs are stored as bytes32 in foundry
+        // index 0 is the index of the 'native' event from Mock, 1 is for the redundant event (just know this)
+        // topics[0] refers to the entire event, so topics[1] is the paremater. Again, weird stuff.
+        bytes32 requestId = entries[1].topics[1];
+        Raffle.RaffleState rState = raffle.getRaffleState();
+
+        // Assert
+        assert(uint256(requestId) > 0);
+        assert(uint256(rState) == 1);
+    }
+
+    /**
+     * @dev An intro to fuzz testing
+     * @param requestId a number which foundry will randomly generate and test multiple times
+     * @dev 256 times, in my experience
+     *
+     */
+    function testFullFillRandomWorldsCanOnlyBeCalledAfterPerformUpKeep(
+        uint256 requestId
+    ) public PlayerEnteredAndTimePassed {
+        vm.expectRevert("nonexistent request");
+        VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
+            requestId,
+            address(raffle)
+        );
+    }
+
+    // One Big Test!
+    function testFullFillRandomWordsPicksAWinnerResetsAndSendThePrize()
+        public
+        PlayerEnteredAndTimePassed
+    {
+        // Arrange
+        uint256 i = 1;
+        uint256 numberOfEntrants = 8;
+        // 7 additional players. Magic number, but beat with me this time
+        for (i = 1; i < numberOfEntrants; i++) {
+            address player = address(uint160(i)); //why uint160 can be converted to address, but not uint256?
+            hoax(player, STARTING_BALANCE);
+            raffle.enterRaffle{value: entranceFee}();
+        }
+
+        vm.recordLogs();
+        raffle.performUpKeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 requestId = entries[1].topics[1];
+        // bytes32 winnerbytes = entries[2].topics[1];
+        // for(i =0; i< entries.length; i++){
+        //     console.log("Entry ",i, " ", uint256(entries[i]));
+        // }
+        console.log("Entries length: ", entries[0].topics.length);
+        // console.log("Winner bytes: ", uint256(winnerbytes));
+        // address winner = address(uint160(bytes20(winnerbytes)));
+        // assembly {
+        //     winner := mload(add(winnerbytes, 20))
+        // }
+        uint256 prize = entranceFee * numberOfEntrants;
+        VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
+            uint256(requestId),
+            address(raffle)
+        );
+        // uint256 previousTimeStamp = raffle.getTimeStamp();
+
+        // console.log("Players length: ", raffle.getPlayersSize());
+
+        // console.log("Raffle State: ", uint256(raffle.getRaffleState()));
+
+        // Asserts
+        assert(uint256(raffle.getRaffleState()) == 0);
+        assert(raffle.getPlayersSize() == 0);
+        // assert(address(uint160(bytes20(winner))) != address(0));
+        assert(raffle.getRecentWinner() != address(0));
+        assert(
+            raffle.getRecentWinner().balance ==
+                prize + STARTING_BALANCE - entranceFee
+        );
+        // you need to warp a bit to get this true
+        // assert(raffle.getTimeStamp() > previousTimeStamp);
     }
 }
