@@ -247,6 +247,7 @@ contract RaffleTest is Test {
             raffle.enterRaffle{value: entranceFee}();
         }
 
+        uint256 previousTimeStamp = raffle.getTimeStamp();
         vm.recordLogs();
         raffle.performUpKeep("");
         Vm.Log[] memory entries = vm.getRecordedLogs();
@@ -266,7 +267,6 @@ contract RaffleTest is Test {
             uint256(requestId),
             address(raffle)
         );
-        // uint256 previousTimeStamp = raffle.getTimeStamp();
 
         // console.log("Players length: ", raffle.getPlayersSize());
 
@@ -282,6 +282,6 @@ contract RaffleTest is Test {
                 prize + STARTING_BALANCE - entranceFee
         );
         // you need to warp a bit to get this true
-        // assert(raffle.getTimeStamp() > previousTimeStamp);
+        assert(raffle.getTimeStamp() > previousTimeStamp);
     }
 }
