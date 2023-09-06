@@ -23,6 +23,7 @@ contract RaffleTest is Test {
     uint64 subscriptionId;
     uint32 callBackGasLimit;
     address linkToken;
+    uint256 deployerKey;
 
     address PLAYER = makeAddr("player");
     uint256 public constant STARTING_BALANCE = 1 ether;
@@ -43,9 +44,11 @@ contract RaffleTest is Test {
             interval,
             vrfCoordinator,
             gasLane,
-            subscriptionId,
+            ,
+            //chucking subId in here to avoid the three word horror of "Stack Too Deep"
             callBackGasLimit,
-            linkToken
+            linkToken,
+            deployerKey
         ) = helperConfig.activeNetworkConfig();
     }
 
@@ -178,6 +181,17 @@ contract RaffleTest is Test {
         _;
     }
 
+    /**
+     * @dev VRFCoordinatorV2Mock and the VRFCoordinator uses different input parameters for
+     * fulfillRandomWords(). Hence skipping the test if testing on forked chain
+     */
+    modifier skipFork() {
+        if (block.chainid != 31337) {
+            return;
+        }
+        _;
+    }
+
     function testPerformUpKeepRevertsIfCheckUpKeepIsFalse() public PlayerEnter {
         // Enough time hasn't passed at this point
         // Arrange
@@ -224,7 +238,7 @@ contract RaffleTest is Test {
      */
     function testFullFillRandomWorldsCanOnlyBeCalledAfterPerformUpKeep(
         uint256 requestId
-    ) public PlayerEnteredAndTimePassed {
+    ) public PlayerEnteredAndTimePassed skipFork {
         vm.expectRevert("nonexistent request");
         VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
             requestId,
@@ -236,6 +250,7 @@ contract RaffleTest is Test {
     function testFullFillRandomWordsPicksAWinnerResetsAndSendThePrize()
         public
         PlayerEnteredAndTimePassed
+        skipFork
     {
         // Arrange
         uint256 i = 1;
