@@ -50,3 +50,12 @@ addConsumer:
 
 fundSubscription:
 	@forge script script/Interactions.s.sol:FundSubscription $(NETWORK_ARGS)
+
+deployLessonNineSolution:
+	@forge script script/DeployAndTransferLessonNineSolution.s.sol:DeployLessonNineSolution --ffi $(NETWORK_ARGS)
+
+solveLessonNine:
+	@forge script script/DeployAndTransferLessonNineSolution.s.sol:SolveLessonNine --ffi $(NETWORK_ARGS) -vvvvvvvv
+
+transferLessonNineNFT:
+	@forge script script/DeployAndTransferLessonNineSolution.s.sol:TransferNFTToDeployer --ffi $(NETWORK_ARGS)  -vvvvv
