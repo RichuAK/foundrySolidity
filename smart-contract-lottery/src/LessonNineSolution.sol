@@ -43,10 +43,10 @@ contract LessonNineSolution is IERC721Receiver {
     }
 
     function onERC721Received(
-        address operator,
-        address from,
+        address /* operator */,
+        address /* from */,
         uint256 tokenId,
-        bytes calldata data
+        bytes calldata /* data */
     ) external returns (bytes4) {
         recievedToken = tokenId;
         return this.onERC721Received.selector;
