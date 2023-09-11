@@ -6,9 +6,10 @@ import {NeapolitanNFT} from "../src/NeapolitanNFT.sol";
 import {Script} from "forge-std/Script.sol";
 
 contract DeployNeapolitanNFT is Script {
-    function run() external {
+    function run() external returns (NeapolitanNFT) {
         vm.startBroadcast();
-        new NeapolitanNFT();
+        NeapolitanNFT neapolitanNFT = new NeapolitanNFT();
         vm.stopBroadcast();
+        return neapolitanNFT;
     }
 }
