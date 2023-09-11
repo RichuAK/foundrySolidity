@@ -35,4 +35,8 @@ contract NeapolitanNFT is ERC721 {
         }
         return s_tokenIdToUri[tokenId];
     }
+
+    function getTokenCounter() public view returns (uint256) {
+        return s_tokenCounter;
+    }
 }
