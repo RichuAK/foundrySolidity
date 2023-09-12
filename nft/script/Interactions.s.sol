@@ -6,7 +6,7 @@ import {NeapolitanNFT} from "../src/NeapolitanNFT.sol";
 import {Script} from "forge-std/Script.sol";
 import {DeployNeapolitanNFT} from "./DeployNeapolitanNFT.s.sol";
 
-contract Interactions is Script {
+contract MintNapoliNFT is Script {
     NeapolitanNFT neapolitanNFT;
 
     function run() external {
