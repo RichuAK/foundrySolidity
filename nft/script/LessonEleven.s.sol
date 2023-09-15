@@ -12,7 +12,8 @@ contract ElevenScript is Script {
         bytes32 slot;
         address helperContractAddress;
         for (i = 0; i < 30; i++) {
-            slot = vm.load(address(lessonEleven), bytes32(uint256(i)));
+            slot = vm.load(address(lessonEleven), bytes32(i));
+            // console.log(slot);
             helperContractAddress = address(uint160(uint256(slot)));
             console.log(
                 "Typecasted Address: at",
