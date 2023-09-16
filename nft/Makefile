@@ -54,5 +54,5 @@ mintMoodNft:
 flipMoodNft:
 	@forge script script/Interactions.s.sol:FlipMoodNft $(NETWORK_ARGS)
 
-lessonEleven:
-	@forge script script/lessonEleven.s.sol:ElevenScript $(NETWORK_ARGS) -vvvv
+solveEleven:
+	@forge script script/LessonEleven.s.sol:SolveLesson $(NETWORK_ARGS) -vvvv
