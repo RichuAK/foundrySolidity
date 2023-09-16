@@ -45,14 +45,14 @@ deploy:
 mintNapoliNft:
 	@forge script script/Interactions.s.sol:MintNapoliNFT $(NETWORK_ARGS) --ffi
 
-deployMood:
-	@forge script script/DeployMoodNft.s.sol:DeployMoodNft $(NETWORK_ARGS)
+deployFlip:
+	@forge script script/DeployFlipNFT.s.sol:DeployFlipNFT $(NETWORK_ARGS)
 
-mintMoodNft:
-	@forge script script/Interactions.s.sol:MintMoodNft $(NETWORK_ARGS)
+mintFlipNft:
+	@forge script script/Interactions.s.sol:MintFlipNFT $(NETWORK_ARGS) --ffi
 
-flipMoodNft:
-	@forge script script/Interactions.s.sol:FlipMoodNft $(NETWORK_ARGS)
+flipFlipNft:
+	@forge script script/Interactions.s.sol:FlipFlipNFT $(NETWORK_ARGS) --ffi
 
 solveEleven:
 	@forge script script/LessonEleven.s.sol:SolveLesson $(NETWORK_ARGS) -vvvv
