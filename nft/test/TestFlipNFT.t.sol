@@ -84,4 +84,42 @@ contract TestFlipNFT is Test {
         );
         flipNFT.flipMood(0);
     }
+
+    function testTwoFlips() public {
+        vm.startPrank(USER);
+        flipNFT.mint();
+        flipNFT.flipMood(0);
+        flipNFT.flipMood(0);
+        vm.stopPrank();
+        assertEq(
+            keccak256(abi.encodePacked(HAPPY_TOKEN_URI)),
+            keccak256(abi.encodePacked(flipNFT.tokenURI(0)))
+        );
+    }
+
+    function testBalanceUpdatesProperly() public {
+        uint256 i = 0;
+        vm.startPrank(USER);
+        for (i = 0; i < 100; i++) {
+            flipNFT.mint();
+        }
+        vm.stopPrank();
+        assertEq(flipNFT.balanceOf(USER), 100);
+    }
+
+    function testTokenCounterUpdatesProperly() public {
+        uint256 i = 0;
+        address USER2 = makeAddr("USER2");
+        vm.startPrank(USER);
+        for (i = 0; i < 100; i++) {
+            flipNFT.mint();
+        }
+        vm.stopPrank();
+        vm.startPrank(USER2);
+        for (i = 0; i < 100; i++) {
+            flipNFT.mint();
+        }
+        vm.stopPrank();
+        assertEq(flipNFT.getTokenCounter(), 200);
+    }
 }
