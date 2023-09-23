@@ -1,8 +1,12 @@
 // import Image from "next/image";
 "use client";
 import { useState } from "react";
-import { BrowserProvider } from "ethers"; // a newer of importing, from ethers v6.0 and next ^13
+import { BrowserProvider, Contract } from "ethers"; // a newer of importing, from ethers v6.0 and next ^13
+// import { ethers } from "ethers";
+import { abi } from "./abi.js";
+// Maybe you could do away with these two lines and do the vanilla route. Try and see.
 // import dynamic from "next/dynamic";
+// const DynamicAbi = dynamic(() => import("./abi.js").then((mod) => mod.abi));
 
 // const DynamicComponentWithNoSSR = dynamic(
 //   () => import("../components/YourComponent"),
@@ -15,6 +19,8 @@ export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
   const [provider, setProvider] = useState();
   const [signer, setSigner] = useState();
+  // const abi = abi.abi;
+
   async function connect() {
     if (typeof window.ethereum != "undefined") {
       try {
@@ -29,6 +35,33 @@ export default function Home() {
       }
     } else {
       setIsConnected(false);
+    }
+  }
+  async function execute() {
+    if (typeof window.ethereum !== "undefined") {
+      const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+      setProvider(provider);
+      setSigner(provider.getSigner());
+
+      console.log("Provider:", provider);
+      console.log("Signer: ", signer);
+      console.log("AbI:");
+      console.log(abi);
+
+      // let provider = new BrowserProvider(window.ethereum);
+      // let signer = await provider.getSigner();
+      const contract = new Contract(contractAddress, abi, signer);
+
+      // signer = await ethers.provider.getSigner();
+
+      try {
+        let SVGURI = contract.getHappySvgUri();
+        console.log(SVGURI);
+      } catch (e) {
+        console.log(e);
+      }
+    } else {
+      console.log("Please Install Metamask!");
     }
   }
   // async function connect() {
@@ -55,6 +88,11 @@ export default function Home() {
           "Connected!"
         ) : (
           <button onClick={() => connect()}>Connect</button>
+        )}
+        {isConnected ? (
+          <button onClick={() => execute()}>Contract Interaction</button>
+        ) : (
+          ""
         )}
       </div>
     </main>
