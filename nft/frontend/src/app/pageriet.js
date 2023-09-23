@@ -1,3 +1,6 @@
+// THIS IS DUMMY!
+// DELETE IT ENTIRELY!
+
 "use client";
 import { useState } from "react";
 import { BrowserProvider } from "ethers";
