@@ -19,15 +19,18 @@ export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
   const [provider, setProvider] = useState();
   const [signer, setSigner] = useState();
+  const value = useState("");
+  const [x, y] = [1, 2];
   // const abi = abi.abi;
-
+  console.log("Signer Outside: ", signer);
+  console.log("Value: ", value);
   async function connect() {
     if (typeof window.ethereum != "undefined") {
       try {
         await ethereum.request({ method: "eth_requestAccounts" });
         setIsConnected(true);
         let provider = new BrowserProvider(window.ethereum);
-        setSigner(provider.getSigner());
+        setSigner(await provider.getSigner());
         setProvider(provider);
         // signer = provider.getSigner();
       } catch (e) {
@@ -41,7 +44,7 @@ export default function Home() {
     if (typeof window.ethereum !== "undefined") {
       const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
       setProvider(provider);
-      setSigner(provider.getSigner());
+      setSigner(await provider.getSigner());
 
       console.log("Provider:", provider);
       console.log("Signer: ", signer);
@@ -55,8 +58,11 @@ export default function Home() {
       // signer = await ethers.provider.getSigner();
 
       try {
-        let SVGURI = contract.getHappySvgUri();
-        console.log(SVGURI);
+        // const contractValue = await contract.getTokenCounter();
+        // const base64Decoded = ethers.utils.base64.decode(contractValue);
+        // console.log("Contract Value: ", base64Decoded);
+        // console.log(contractValue);
+        await contract.mint();
       } catch (e) {
         console.log(e);
       }
