@@ -19,11 +19,7 @@ export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
   const [provider, setProvider] = useState();
   const [signer, setSigner] = useState();
-  const value = useState("");
-  const [x, y] = [1, 2];
-  // const abi = abi.abi;
-  console.log("Signer Outside: ", signer);
-  console.log("Value: ", value);
+
   async function connect() {
     if (typeof window.ethereum != "undefined") {
       try {
@@ -48,8 +44,8 @@ export default function Home() {
 
       console.log("Provider:", provider);
       console.log("Signer: ", signer);
-      console.log("AbI:");
-      console.log(abi);
+      // console.log("AbI:");
+      // console.log(abi);
 
       // let provider = new BrowserProvider(window.ethereum);
       // let signer = await provider.getSigner();
@@ -58,11 +54,14 @@ export default function Home() {
       // signer = await ethers.provider.getSigner();
 
       try {
-        // const contractValue = await contract.getTokenCounter();
-        // const base64Decoded = ethers.utils.base64.decode(contractValue);
+        // const contractValue = await contract.getHappySvgUri();
+        // const stringValue = toUtf8String(contractValue);
+        // const base64Decoded = decodeBase64(contractValue);
         // console.log("Contract Value: ", base64Decoded);
         // console.log(contractValue);
         await contract.mint();
+        // const decoded = decodeBase64("EjQ=");
+        // console.log("Contract Value: ", stringValue);
       } catch (e) {
         console.log(e);
       }
@@ -70,20 +69,6 @@ export default function Home() {
       console.log("Please Install Metamask!");
     }
   }
-  // async function connect() {
-  //   if (typeof window.ethereum !== "undefined") {
-  //     try {
-  //       await ethereum.request({ method: "eth_requestAccounts" });
-  //       setIsConnected(true);
-  //       const provider = new ethers.providers.Web3Provider(window.ethereum);
-  //       setSigner(provider.getSigner());
-  //     } catch (e) {
-  //       console.log(e);
-  //     }
-  //   } else {
-  //     setIsConnected(false);
-  //   }
-  // }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
