@@ -4,21 +4,18 @@ import { useState } from "react";
 import { BrowserProvider, Contract } from "ethers"; // a newer of importing, from ethers v6.0 and next ^13
 // import { ethers } from "ethers";
 import { abi } from "./abi.js";
-// Maybe you could do away with these two lines and do the vanilla route. Try and see.
-// import dynamic from "next/dynamic";
-// const DynamicAbi = dynamic(() => import("./abi.js").then((mod) => mod.abi));
-
-// const DynamicComponentWithNoSSR = dynamic(
-//   () => import("../components/YourComponent"),
-//   {
-//     ssr: false,
-//   }
-// );
+import { styled } from "styled-components";
 
 export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
   const [provider, setProvider] = useState();
   const [signer, setSigner] = useState();
+
+  // sort of coping from bing ai. Works, but ugly and with warnings
+  const Button = styled.button`
+    background-color: green;
+    color: white;
+  `;
 
   async function connect() {
     if (typeof window.ethereum != "undefined") {
@@ -36,7 +33,7 @@ export default function Home() {
       setIsConnected(false);
     }
   }
-  async function execute() {
+  async function callContract() {
     if (typeof window.ethereum !== "undefined") {
       const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
       setProvider(provider);
@@ -54,12 +51,18 @@ export default function Home() {
       // signer = await ethers.provider.getSigner();
 
       try {
-        // const contractValue = await contract.getHappySvgUri();
+        const contractIntInHex = await contract.getTokenCounter();
+        const decodedValue = parseInt(contractIntInHex);
+        console.log("Parsed Int Value: ", decodedValue);
+
+        const contractStringInHex = await contract.getHappySvgUri();
+        const decodedStringValue = contractStringInHex.toString("utf8");
+        console.log("Decoded String Value: ", decodedStringValue);
+
         // const stringValue = toUtf8String(contractValue);
-        // const base64Decoded = decodeBase64(contractValue);
-        // console.log("Contract Value: ", base64Decoded);
+
         // console.log(contractValue);
-        await contract.mint();
+        // await contract.mint();
         // const decoded = decodeBase64("EjQ=");
         // console.log("Contract Value: ", stringValue);
       } catch (e) {
@@ -70,21 +73,51 @@ export default function Home() {
     }
   }
 
+  async function execute() {
+    if (typeof window.ethereum !== "undefined") {
+      const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+
+      console.log("Provider:", provider);
+      console.log("Signer: ", signer);
+
+      const contract = new Contract(contractAddress, abi, signer);
+
+      try {
+        await contract.mint();
+      } catch (e) {
+        console.log(e);
+      }
+    } else {
+      console.log("Please Install Metamask!");
+    }
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      {/* <DynamicComponentWithNoSSR /> */}
       <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        Hello React!
+        --- Hello React! ---
         {isConnected ? (
           "Connected!"
         ) : (
-          <button onClick={() => connect()}>Connect</button>
+          <div>
+            <button onClick={() => connect()}> Connect </button>
+          </div>
         )}
         {isConnected ? (
-          <button onClick={() => execute()}>Contract Interaction</button>
+          <Button onClick={() => callContract()}>Call Contract</Button>
         ) : (
           ""
         )}
+      </div>
+      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
+        --- Contract Writing ---
+        <div>
+          {isConnected ? (
+            <Button onClick={() => execute()}>Mint NFT</Button>
+          ) : (
+            ""
+          )}
+        </div>
       </div>
     </main>
   );
