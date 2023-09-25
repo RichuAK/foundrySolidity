@@ -22,6 +22,7 @@ export default function Home() {
       try {
         await ethereum.request({ method: "eth_requestAccounts" });
         setIsConnected(true);
+        // this 'provider' is a different variable than the 'const provider'
         let provider = new BrowserProvider(window.ethereum);
         setSigner(await provider.getSigner());
         setProvider(provider);
@@ -36,8 +37,8 @@ export default function Home() {
   async function callContract() {
     if (typeof window.ethereum !== "undefined") {
       const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-      setProvider(provider);
-      setSigner(await provider.getSigner());
+      // setProvider(provider);
+      // setSigner(await provider.getSigner());
 
       console.log("Provider:", provider);
       console.log("Signer: ", signer);
@@ -51,6 +52,9 @@ export default function Home() {
       // signer = await ethers.provider.getSigner();
 
       try {
+        // Both these decoding methods are native to JavaScript, not Ethers specific
+        // Get deeper into Ethers to make this more neat!
+
         const contractIntInHex = await contract.getTokenCounter();
         const decodedValue = parseInt(contractIntInHex);
         console.log("Parsed Int Value: ", decodedValue);
