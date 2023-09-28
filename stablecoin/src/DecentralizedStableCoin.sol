@@ -44,6 +44,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract DecentralizedStableCoin is ERC20Burnable, Ownable {
     error DecentralizedStableCoin__MustBeMoreThanZero();
     error DecentralizedStableCoin__MustBeLessThanBalance();
+    error DecentralizedStableCoin__CantSendToZeroAddress();
 
     constructor() ERC20("DecentralizedStableCoin", "DSC") {}
 
@@ -62,5 +63,19 @@ contract DecentralizedStableCoin is ERC20Burnable, Ownable {
         // executes the burn function of the super class.
         super.burn(_amount);
         // the checks look a bit redundant to me, they're being performed in the original definition as well
+    }
+
+    function mint(
+        address _to,
+        uint256 _amount
+    ) external onlyOwner returns (bool) {
+        if (_amount <= 0) {
+            revert DecentralizedStableCoin__MustBeMoreThanZero();
+        }
+        if (_to == address(0)) {
+            revert DecentralizedStableCoin__CantSendToZeroAddress();
+        }
+        _mint(_to, _amount);
+        return true;
     }
 }
