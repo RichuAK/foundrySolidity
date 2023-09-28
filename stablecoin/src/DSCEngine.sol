@@ -24,6 +24,7 @@ pragma solidity 0.8.21;
 
 import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title DSCEngine
@@ -50,6 +51,7 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__ShouldBeMoreThanZero();
     error DSCEngine__PriceFeedsAndTokensDontHaveTheSameLength();
     error DSCEngine__NotAllowedToken();
+    error DSCEngine__TransferFailed();
 
     //////////////////////////
     // State Variables    ////
@@ -58,7 +60,13 @@ contract DSCEngine is ReentrancyGuard {
     /// @dev a mapping to specify the allowed tokens that can be accepted as collateral
     /// @dev rather than just an address-to-bool mapping, going directly for priceFeed since an oracle is needed anyway
     mapping(address token => address priceFeed) private s_priceFeeds;
+    mapping(address user => mapping(address token => uint256 amount)) private s_collateralDeposits;
     DecentralizedStableCoin private immutable i_dsc;
+
+    /////////////////
+    // Events    ////
+    /////////////////
+    event CollateralDeposited(address indexed depositor, address indexed tokenAddress, uint256 indexed amount);
 
     /////////////////
     // Modifiers ////
@@ -82,11 +90,7 @@ contract DSCEngine is ReentrancyGuard {
     // Functions ////
     /////////////////
 
-    constructor(
-        address[] memory tokenAddresses,
-        address[] memory priceFeedAddresses,
-        address dscAddress
-    ) {
+    constructor(address[] memory tokenAddresses, address[] memory priceFeedAddresses, address dscAddress) {
         if (tokenAddresses.length != priceFeedAddresses.length) {
             revert DSCEngine__PriceFeedsAndTokensDontHaveTheSameLength();
         }
@@ -108,16 +112,23 @@ contract DSCEngine is ReentrancyGuard {
      *
      * @param tokenCollateralAddress The address of the token contract whose token is to be accepted as collateral
      * @param amountCollateral The amount of collateral to deposit
+     *
+     * @notice follows CEI - Checks, Effects, (external) Interactions
      */
-    function depositCollateral(
-        address tokenCollateralAddress,
-        uint256 amountCollateral
-    )
+    function depositCollateral(address tokenCollateralAddress, uint256 amountCollateral)
         external
         moreThanZero(amountCollateral)
         isAllowedToken(tokenCollateralAddress)
         nonReentrant
-    {}
+    {
+        s_collateralDeposits[msg.sender][tokenCollateralAddress] += amountCollateral;
+
+        emit CollateralDeposited(msg.sender, tokenCollateralAddress, amountCollateral);
+        bool success = IERC20(tokenCollateralAddress).transferFrom(msg.sender, address(this), amountCollateral);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+    }
 
     function liquidate() external {}
 
