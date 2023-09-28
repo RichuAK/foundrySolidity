@@ -1,8 +1,8 @@
 // Layout of Contract:
 // version
 // imports
-// errors
 // interfaces, libraries, contracts
+// errors
 // Type declarations
 // State variables
 // Events
@@ -22,6 +22,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.21;
 
+import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
+
 /**
  * @title DSCEngine
  * @author Richu A Kuttikattu
@@ -40,9 +42,80 @@ pragma solidity 0.8.21;
  *
  */
 contract DSCEngine {
+    /////////////////
+    // Errors    ////
+    /////////////////
+
+    error DSCEngine__ShouldBeMoreThanZero();
+    error DSCEngine__PriceFeedsAndTokensDontHaveTheSameLength();
+    error DSCEngine__NotAllowedToken();
+
+    //////////////////////////
+    // State Variables    ////
+    /////////////////////////
+
+    /// @dev a mapping to specify the allowed tokens that can be accepted as collateral
+    /// @dev rather than just an address-to-bool mapping, going directly for priceFeed since an oracle is needed anyway
+    mapping(address token => address priceFeed) private s_priceFeeds;
+    DecentralizedStableCoin private immutable i_dsc;
+
+    /////////////////
+    // Modifiers ////
+    /////////////////
+
+    modifier moreThanZero(uint256 amount) {
+        if (amount == 0) {
+            revert DSCEngine__ShouldBeMoreThanZero();
+        }
+        _;
+    }
+
+    modifier isAllowedToken(address token) {
+        if (s_priceFeeds[token] == address(0)) {
+            revert DSCEngine__NotAllowedToken();
+        }
+        _;
+    }
+
+    /////////////////
+    // Functions ////
+    /////////////////
+
+    constructor(
+        address[] memory tokenAddresses,
+        address[] memory priceFeedAddresses,
+        address dscAddress
+    ) {
+        if (tokenAddresses.length != priceFeedAddresses.length) {
+            revert DSCEngine__PriceFeedsAndTokensDontHaveTheSameLength();
+        }
+
+        for (uint256 i = 0; i < tokenAddresses.length; i++) {
+            s_priceFeeds[tokenAddresses[i]] = priceFeedAddresses[i];
+        }
+
+        i_dsc = DecentralizedStableCoin(dscAddress);
+    }
+
+    //////////////////////////
+    // External Functions ////
+    //////////////////////////
+
     function depositCollateralAndMintDsc() external {}
 
-    function depositCollateral() external {}
+    /**
+     *
+     * @param tokenCollateralAddress The address of the token contract whose token is to be accepted as collateral
+     * @param amountCollateral The amount of collateral to deposit
+     */
+    function depositCollateral(
+        address tokenCollateralAddress,
+        uint256 amountCollateral
+    )
+        external
+        moreThanZero(amountCollateral)
+        isAllowedToken(tokenCollateralAddress)
+    {}
 
     function liquidate() external {}
 
