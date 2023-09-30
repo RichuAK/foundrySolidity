@@ -57,15 +57,17 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__TransferFailed();
     error DSCEngine__BreaksHealthFactor(uint256 healthFactor);
     error DSCEngine__MintFailed();
+    error DSCEngine__UserHealthFactorOk();
 
     //////////////////////////
     // State Variables    ////
     /////////////////////////
     uint256 private constant ADDITIONAL_FEED_PRECISION = 1e10;
     uint256 private constant PRECISION = 1e18;
-    uint256 private constant LIQUIDATION_THRESHOLD = 50;
+    uint256 private constant LIQUIDATION_THRESHOLD = 50; // math in the end comes out to 200% collateral (yep)
     uint256 private constant LIQUIDATION_PRECISION = 100;
-    uint256 private constant MIN_HEALTH_FACTOR = 1;
+    uint256 private constant MIN_HEALTH_FACTOR = 1; // this could be 1e18. Wait and see
+    uint256 private constant LIQUIDATION_BONUS = 10; // 10% bonus for liquidation
 
     /// @dev a mapping to specify the allowed tokens that can be accepted as collateral
     /// @dev rather than just an address-to-bool mapping, going directly for priceFeed since an oracle is needed anyway
@@ -180,7 +182,23 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function liquidate() external {}
+    // Liquidate a certain user's debt position if the health factor goes below MIN_HEALTH_FACTOR
+    // Incentivize others to put in DSC by giving them bonuses
+    function liquidate(address user, address collateralToken, uint256 debtToCover)
+        external
+        moreThanZero(debtToCover)
+        nonReentrant
+    {
+        // check user's health factor before proceeding
+        uint256 userHealthFactor = _healthFactor(user);
+        if (userHealthFactor >= MIN_HEALTH_FACTOR) {
+            revert DSCEngine__UserHealthFactorOk();
+        }
+
+        uint256 tokenAmountFromDebtCovered = getTokenAmountFromUSD(collateralToken, debtToCover);
+        uint256 bonusCollateral = (tokenAmountFromDebtCovered * LIQUIDATION_BONUS) / LIQUIDATION_PRECISION; // LIQUIDATION_PRECISION is used for the number 100
+        uint256 totalCollateralToRedeem = tokenAmountFromDebtCovered + bonusCollateral;
+    }
 
     function redeemCollateralForDsc(address tokenCollateralAddress, uint256 collateralAmount, uint256 dscamount)
         external
@@ -248,6 +266,10 @@ contract DSCEngine is ReentrancyGuard {
         (uint256 totalDscMinted, uint256 totalCollateralValueInUsd) = _getAccountInformation(user);
         uint256 collateralAdjustedForThreshold =
             (totalCollateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
+        // up here, LIQUIDATION_THRESHOLD / LIQUIDATION_PRECISION
+        // this just comes out to 50/100 = 1/2 which basically means you're cutting the health by half
+        // and then basically forcing the user to collaterize more via healthfactor
+        // I don't know why we're using LIQUIDATION_THRESHOLD / LIQUIDATION_PRECISION fancy terms
         healthFactor = (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
     }
 
@@ -285,7 +307,14 @@ contract DSCEngine is ReentrancyGuard {
     function getUsdValue(address token, uint256 amount) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
         (, int256 price,,,) = priceFeed.latestRoundData();
+        // ADDITIONAL_FEED_PRECISION since price is returned in 8 decimal places. Need to get the digits right
         return ((uint256(price) * ADDITIONAL_FEED_PRECISION) * amount) / PRECISION;
+    }
+
+    function getTokenAmountFromUSD(address token, uint256 usdValueInWei) public view returns (uint256) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
+        (, int256 price,,,) = priceFeed.latestRoundData();
+        return (usdValueInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);
     }
 
     function getHealthFactor() public view {}
