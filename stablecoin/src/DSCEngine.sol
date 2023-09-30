@@ -58,6 +58,7 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__BreaksHealthFactor(uint256 healthFactor);
     error DSCEngine__MintFailed();
     error DSCEngine__UserHealthFactorOk();
+    error DSCEngine__HealthFactorNotImproved();
 
     //////////////////////////
     // State Variables    ////
@@ -200,6 +201,13 @@ contract DSCEngine is ReentrancyGuard {
         uint256 tokenAmountFromDebtCovered = getTokenAmountFromUSD(collateralToken, debtToCover);
         uint256 bonusCollateral = (tokenAmountFromDebtCovered * LIQUIDATION_BONUS) / LIQUIDATION_PRECISION; // LIQUIDATION_PRECISION is used for the number 100
         uint256 totalCollateralToRedeem = tokenAmountFromDebtCovered + bonusCollateral;
+        _redeemCollateral(user, msg.sender, collateralToken, totalCollateralToRedeem);
+        _burnDsc(user, msg.sender, debtToCover);
+        uint256 userUpdatedHealthFactor = _healthFactor(user);
+        if (userUpdatedHealthFactor <= userHealthFactor) {
+            revert DSCEngine__HealthFactorNotImproved();
+        }
+        _revertIfHealthFactorIsLow(msg.sender);
     }
 
     function redeemCollateralForDsc(address tokenCollateralAddress, uint256 collateralAmount, uint256 dscamount)
@@ -225,17 +233,11 @@ contract DSCEngine is ReentrancyGuard {
         moreThanZero(collateralAmount)
         nonReentrant
     {
-        _redeemCollateral(tokenCollateralAddress, collateralAmount, msg.sender, msg.sender);
+        _redeemCollateral(msg.sender, msg.sender, tokenCollateralAddress, collateralAmount);
     }
 
     function burnDsc(uint256 amount) public moreThanZero(amount) {
-        s_mintedDsc[msg.sender] -= amount;
-        // don't you need to approve this first?! Or is it Owner privileges?
-        bool success = i_dsc.transferFrom(msg.sender, address(this), amount);
-        if (!success) {
-            revert DSCEngine__TransferFailed();
-        }
-        i_dsc.burn(amount);
+        _burnDsc(msg.sender, msg.sender, amount);
         // this is pretty much redundant since collateral remains unchanged while debt(dsc) is reduced
         _revertIfHealthFactorIsLow(msg.sender);
     }
@@ -244,7 +246,7 @@ contract DSCEngine is ReentrancyGuard {
     // Internal Functions ////
     //////////////////////////
 
-    function _redeemCollateral(address tokenCollateralAddress, uint256 collateralAmount, address from, address to)
+    function _redeemCollateral(address from, address to, address tokenCollateralAddress, uint256 collateralAmount)
         private
     {
         s_collateralDeposits[from][tokenCollateralAddress] -= collateralAmount;
@@ -253,6 +255,22 @@ contract DSCEngine is ReentrancyGuard {
             revert DSCEngine__TransferFailed();
         }
         emit CollateralRedeemed(from, to, tokenCollateralAddress, collateralAmount);
+    }
+
+    /**
+     * @dev low-level function, handle with care with checks and balances!
+     * @param debtHolder user whose DSCs are going to be burned/taken away
+     * @param liquidator user who's actually paying for the burn, by transferring DSC to the contract
+     * @param amount  amount to be burned
+     */
+    function _burnDsc(address debtHolder, address liquidator, uint256 amount) private moreThanZero(amount) {
+        s_mintedDsc[debtHolder] -= amount;
+        // don't you need to approve this first?! Or is it Owner privileges?
+        bool success = i_dsc.transferFrom(liquidator, address(this), amount);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+        i_dsc.burn(amount);
     }
 
     function _getAccountInformation(address user)
