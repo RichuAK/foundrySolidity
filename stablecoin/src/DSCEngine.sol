@@ -83,6 +83,7 @@ contract DSCEngine is ReentrancyGuard {
     // Events    ////
     /////////////////
     event CollateralDeposited(address indexed depositor, address indexed tokenAddress, uint256 indexed amount);
+    event CollateralRedeemed(address indexed depositor, address indexed tokenAddress, uint256 indexed amount);
 
     /////////////////
     // Modifiers ////
@@ -130,7 +131,18 @@ contract DSCEngine is ReentrancyGuard {
     // External Functions ////
     //////////////////////////
 
-    function depositCollateralAndMintDsc() external {}
+    /**
+     * @dev combines depositCollateral() and mintDsc() into one transaction
+     * @param tokenCollateralAddress The address of the token contract whose token is to be accepted as collateral
+     * @param amountCollateral The amount of collateral to deposit
+     * @param dscToMint amount of DSC token to be minted, specified by the user
+     */
+    function depositCollateralAndMintDsc(address tokenCollateralAddress, uint256 amountCollateral, uint256 dscToMint)
+        external
+    {
+        depositCollateral(tokenCollateralAddress, amountCollateral);
+        mintDsc(dscToMint);
+    }
 
     /**
      *
@@ -140,7 +152,7 @@ contract DSCEngine is ReentrancyGuard {
      * @notice follows CEI - Checks, Effects, (external) Interactions
      */
     function depositCollateral(address tokenCollateralAddress, uint256 amountCollateral)
-        external
+        public
         moreThanZero(amountCollateral)
         isAllowedToken(tokenCollateralAddress)
         nonReentrant
@@ -159,7 +171,7 @@ contract DSCEngine is ReentrancyGuard {
      * @dev collateral should be more than the minimum threshold
      * @notice follows CEI
      */
-    function mintDsc(uint256 dscToMint) external moreThanZero(dscToMint) nonReentrant {
+    function mintDsc(uint256 dscToMint) public moreThanZero(dscToMint) nonReentrant {
         _revertIfHealthFactorIsLow(msg.sender);
         s_mintedDsc[msg.sender] += dscToMint;
         bool minted = i_dsc.mint(msg.sender, dscToMint);
@@ -170,11 +182,49 @@ contract DSCEngine is ReentrancyGuard {
 
     function liquidate() external {}
 
-    function redeemCollateralForDsc() external {}
+    function redeemCollateralForDsc(address tokenCollateralAddress, uint256 collateralAmount, uint256 dscamount)
+        external
+    {
+        // this more or less solves the issue of money getting locked in. You can burn your entire debt position and then fully redeem your collateral
+        burnDsc(dscamount);
+        redeemCollateral(tokenCollateralAddress, collateralAmount);
+        //no need to check healthFactor since redeemCollateral() does it in the end already
+    }
 
-    function redeemCollateral() external {}
+    /**
+     * @dev redeem the collateral that was deposited by the user
+     * @dev checks the healthfactor after redemption and reverts if HealthFactor is not good
+     * @param tokenCollateralAddress address of the token that's to be redeemed
+     * @param collateralAmount amount to be redeemed
+     *
+     * @notice will be refactored later for mysterious reasons (You can't empty once you're in the system?)
+     * violates CEI for better gas performance, instead of simulating the transfer first
+     */
+    function redeemCollateral(address tokenCollateralAddress, uint256 collateralAmount)
+        public
+        moreThanZero(collateralAmount)
+        nonReentrant
+    {
+        s_collateralDeposits[msg.sender][tokenCollateralAddress] -= collateralAmount;
+        bool success = IERC20(tokenCollateralAddress).transfer(msg.sender, collateralAmount);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+        _revertIfHealthFactorIsLow(msg.sender);
+        emit CollateralRedeemed(msg.sender, tokenCollateralAddress, collateralAmount);
+    }
 
-    function burnDsc() external {}
+    function burnDsc(uint256 amount) public moreThanZero(amount) {
+        s_mintedDsc[msg.sender] -= amount;
+        // don't you need to approve this first?! Or is it Owner privileges?
+        bool success = i_dsc.transferFrom(msg.sender, address(this), amount);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+        i_dsc.burn(amount);
+        // this is pretty much redundant since collateral remains unchanged while debt(dsc) is reduced
+        _revertIfHealthFactorIsLow(msg.sender);
+    }
 
     //////////////////////////
     // Internal Functions ////
