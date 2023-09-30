@@ -85,7 +85,9 @@ contract DSCEngine is ReentrancyGuard {
     // Events    ////
     /////////////////
     event CollateralDeposited(address indexed depositor, address indexed tokenAddress, uint256 indexed amount);
-    event CollateralRedeemed(address indexed depositor, address indexed tokenAddress, uint256 indexed amount);
+    event CollateralRedeemed(
+        address indexed redeemedFrom, address indexed redeemedTo, address indexed tokenAddress, uint256 amount
+    );
 
     /////////////////
     // Modifiers ////
@@ -223,13 +225,7 @@ contract DSCEngine is ReentrancyGuard {
         moreThanZero(collateralAmount)
         nonReentrant
     {
-        s_collateralDeposits[msg.sender][tokenCollateralAddress] -= collateralAmount;
-        bool success = IERC20(tokenCollateralAddress).transfer(msg.sender, collateralAmount);
-        if (!success) {
-            revert DSCEngine__TransferFailed();
-        }
-        _revertIfHealthFactorIsLow(msg.sender);
-        emit CollateralRedeemed(msg.sender, tokenCollateralAddress, collateralAmount);
+        _redeemCollateral(tokenCollateralAddress, collateralAmount, msg.sender, msg.sender);
     }
 
     function burnDsc(uint256 amount) public moreThanZero(amount) {
@@ -247,6 +243,17 @@ contract DSCEngine is ReentrancyGuard {
     //////////////////////////
     // Internal Functions ////
     //////////////////////////
+
+    function _redeemCollateral(address tokenCollateralAddress, uint256 collateralAmount, address from, address to)
+        private
+    {
+        s_collateralDeposits[from][tokenCollateralAddress] -= collateralAmount;
+        bool success = IERC20(tokenCollateralAddress).transfer(to, collateralAmount);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+        emit CollateralRedeemed(from, to, tokenCollateralAddress, collateralAmount);
+    }
 
     function _getAccountInformation(address user)
         private
