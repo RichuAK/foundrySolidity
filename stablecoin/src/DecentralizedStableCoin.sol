@@ -28,7 +28,7 @@ pragma solidity 0.8.21;
 /**
  * @notice Only importing ERC20Burnable instead of Both Burnable and ERC20 as in the course
  * @notice Since Burnable is an extension that inherits from ERC20. Will see if works
- * @notice Doesn't work, you need to import ERC20 for the constructor
+ * @notice Update: Doesn't work, you need to import ERC20 for the constructor
  */
 import {ERC20Burnable, ERC20} from "@openzeppelin/contracts/token/ERC20/Extensions/ERC20Burnable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -51,7 +51,7 @@ contract DecentralizedStableCoin is ERC20Burnable, Ownable {
     /**
      *
      * @param _amount amount to be burned
-     * @dev does a couple of checks and reverts or executes the original burn
+     * @dev does a couple of checks and reverts or executes the original burn function in the super contract
      */
     function burn(uint256 _amount) public override onlyOwner {
         if (_amount <= 0) {
@@ -65,10 +65,13 @@ contract DecentralizedStableCoin is ERC20Burnable, Ownable {
         // the checks look a bit redundant to me, they're being performed in the original definition as well
     }
 
-    function mint(
-        address _to,
-        uint256 _amount
-    ) external onlyOwner returns (bool) {
+    /**
+     *
+     * @param _to the address to which the tokens are to be assigned ownership
+     * @param _amount the amount of tokens to be minted
+     * @dev onlyOwner function, controlled by DSCEngine
+     */
+    function mint(address _to, uint256 _amount) external onlyOwner returns (bool) {
         if (_amount <= 0) {
             revert DecentralizedStableCoin__MustBeMoreThanZero();
         }

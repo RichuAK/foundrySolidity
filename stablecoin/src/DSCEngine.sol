@@ -35,6 +35,8 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/Ag
  * @notice This contract is based on MakerDAO DSS system
  *
  *
+ * @dev ReentrancyGuard from openzeppelin, as a defense against reentrancy attacks
+ *
  * The system is designed to be as minimal as possible.
  * This is a stablecoin with the properties:
  * - Exogenously Collateralized
@@ -68,9 +70,13 @@ contract DSCEngine is ReentrancyGuard {
     /// @dev a mapping to specify the allowed tokens that can be accepted as collateral
     /// @dev rather than just an address-to-bool mapping, going directly for priceFeed since an oracle is needed anyway
     mapping(address token => address priceFeed) private s_priceFeeds;
+    /// @dev a mapping to keep track of all the deposits of each token made by the user
     mapping(address user => mapping(address token => uint256 amount)) private s_collateralDeposits;
+    /// @dev the DSC tokens minted by each user
     mapping(address user => uint256 DscMinted) private s_mintedDsc;
+    /// @dev array of all the tokens that are being accepted as collateral
     address[] private s_collateralTokens;
+    /// @dev the DecentralizedStableCoin contract with mint and burn functions, controlled by this Engine
     DecentralizedStableCoin private immutable i_dsc;
 
     /////////////////
@@ -82,6 +88,7 @@ contract DSCEngine is ReentrancyGuard {
     // Modifiers ////
     /////////////////
 
+    // modifier for a sanity check
     modifier moreThanZero(uint256 amount) {
         if (amount == 0) {
             revert DSCEngine__ShouldBeMoreThanZero();
@@ -89,6 +96,7 @@ contract DSCEngine is ReentrancyGuard {
         _;
     }
 
+    // modifier to check whether can be allowed as a collateral
     modifier isAllowedToken(address token) {
         if (s_priceFeeds[token] == address(0)) {
             revert DSCEngine__NotAllowedToken();
@@ -100,6 +108,11 @@ contract DSCEngine is ReentrancyGuard {
     // Functions ////
     /////////////////
 
+    ///
+    /// @param tokenAddresses the array of token addresses that are accepted as collateral
+    /// @param priceFeedAddresses array of priceFeed addresses that gives the corresponding usd value of each of the collateral token
+    /// @param dscAddress address of the dsc contract to be controlled by this contract
+    /// @dev takes the arrays and sets a couple of state variables
     constructor(address[] memory tokenAddresses, address[] memory priceFeedAddresses, address dscAddress) {
         if (tokenAddresses.length != priceFeedAddresses.length) {
             revert DSCEngine__PriceFeedsAndTokensDontHaveTheSameLength();
@@ -198,6 +211,11 @@ contract DSCEngine is ReentrancyGuard {
     ///////////////////////////////
     // Public View Functions /////
     //////////////////////////////
+
+    /**
+     * @param user the address of the user whose collateral position is being queried
+     * @dev returns the total Collateral Value in USD of user
+     */
     function getAccountCollateralValueInUsd(address user) private view returns (uint256 totalCollateralValueInUsd) {
         address token;
         uint256 amount;
@@ -209,6 +227,11 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
+    /**
+     * @dev takes in the token address and amount, and gives the corresponding USD value of the tokens from the Oracle
+     * @param token token address whose value needs to be found out
+     * @param amount amount of tokens whose value needs to be found out
+     */
     function getUsdValue(address token, uint256 amount) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
         (, int256 price,,,) = priceFeed.latestRoundData();
