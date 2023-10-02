@@ -45,6 +45,35 @@ contract DSCEngineTest is Test {
         new DSCEngine(priceFeedAddresses, tokenAddresses, address(dsc));
     }
 
+    /* Start of My Tests */
+
+    function testDepositCollateralAndMintDSCRevertsIfTokenIsntAllowed() public {
+        address dummyToken = makeAddr("token");
+        uint256 collateralAmount = 500;
+        uint256 dscToMint = 1000;
+        vm.expectRevert(DSCEngine.DSCEngine__NotAllowedToken.selector);
+        // vm.expectRevert();
+        engine.depositCollateralAndMintDsc(dummyToken, collateralAmount, dscToMint);
+    }
+
+    function testMintDSCRevertsIfAmountIsZero() public {
+        vm.expectRevert(DSCEngine.DSCEngine__ShouldBeMoreThanZero.selector);
+        engine.mintDsc(0);
+    }
+
+    function testDepositCollateralAndMintDsc() public {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        // Act /Assert
+        vm.expectEmit();
+        // vm.expectEmit(user, address(weth), 17e18);
+        emit CollateralDeposited(USER, address(weth), COLLATERAL_AMOUNT);
+        engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, 123);
+        vm.stopPrank();
+    }
+
+    /* End of My Tests */
+
     // All this tests are for local environment at the moment
 
     //Price Tests
