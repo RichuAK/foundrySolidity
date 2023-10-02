@@ -289,6 +289,12 @@ contract DSCEngine is ReentrancyGuard {
      */
     function _healthFactor(address user) private view returns (uint256 healthFactor) {
         (uint256 totalDscMinted, uint256 totalCollateralValueInUsd) = _getAccountInformation(user);
+
+        // BUG Fix to remedy division by zero in the initial case
+        if (totalDscMinted == 0) {
+            healthFactor = MIN_HEALTH_FACTOR;
+            return healthFactor;
+        }
         uint256 collateralAdjustedForThreshold =
             (totalCollateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
         // up here, LIQUIDATION_THRESHOLD / LIQUIDATION_PRECISION
@@ -296,6 +302,8 @@ contract DSCEngine is ReentrancyGuard {
         // and then basically forcing the user to collaterize more via healthfactor
         // I don't know why we're using LIQUIDATION_THRESHOLD / LIQUIDATION_PRECISION fancy terms
         healthFactor = (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
+        // BUG: totalDscMinted for a new user is 0, so healthFactor errors with a division by Zero!!
+        // maybe you don't need PRECISION here? Or do you?
     }
 
     function _revertIfHealthFactorIsLow(address user) internal view {
