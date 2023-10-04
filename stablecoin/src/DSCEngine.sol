@@ -177,8 +177,9 @@ contract DSCEngine is ReentrancyGuard {
      * @notice follows CEI
      */
     function mintDsc(uint256 dscToMint) public moreThanZero(dscToMint) nonReentrant {
-        _revertIfHealthFactorIsLow(msg.sender);
+        // (uint256 totalDscMinted, uint256 totalCollateralValueInUsd) = _getAccountInformation(user);
         s_mintedDsc[msg.sender] += dscToMint;
+        _revertIfHealthFactorIsLow(msg.sender);
         bool minted = i_dsc.mint(msg.sender, dscToMint);
         if (!minted) {
             revert DSCEngine__MintFailed();
@@ -290,11 +291,10 @@ contract DSCEngine is ReentrancyGuard {
     function _healthFactor(address user) private view returns (uint256 healthFactor) {
         (uint256 totalDscMinted, uint256 totalCollateralValueInUsd) = _getAccountInformation(user);
 
-        // BUG Fix to remedy division by zero in the initial case
-        if (totalDscMinted == 0) {
-            healthFactor = MIN_HEALTH_FACTOR;
-            return healthFactor;
-        }
+        // // BUG Fix to remedy division by zero in the initial case
+        // if (totalDscMinted == 0) {
+        //     totalDscMinted = 20;
+        // }
         uint256 collateralAdjustedForThreshold =
             (totalCollateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
         // up here, LIQUIDATION_THRESHOLD / LIQUIDATION_PRECISION
@@ -350,5 +350,15 @@ contract DSCEngine is ReentrancyGuard {
         return (usdValueInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);
     }
 
-    function getHealthFactor() public view {}
+    function getHealthFactor(address user) public view returns (uint256) {
+        return _healthFactor(user);
+    }
+
+    function getUserInformation(address user)
+        public
+        view
+        returns (uint256 totalDscMinted, uint256 totalCollateralValueInUsd)
+    {
+        return _getAccountInformation(user);
+    }
 }
