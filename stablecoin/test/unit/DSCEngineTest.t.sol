@@ -27,6 +27,9 @@ contract DSCEngineTest is Test {
 
     // event declarations
     event CollateralDeposited(address indexed depositor, address indexed tokenAddress, uint256 indexed amount);
+    event CollateralRedeemed(
+        address indexed redeemedFrom, address indexed redeemedTo, address indexed tokenAddress, uint256 amount
+    );
 
     function setUp() external {
         deployer = new DeployDSC();
@@ -46,14 +49,22 @@ contract DSCEngineTest is Test {
     }
 
     /* Start of My Tests */
+    modifier depositedCollateral() {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        engine.depositCollateral(weth, COLLATERAL_AMOUNT);
+        vm.stopPrank();
+        _;
+    }
 
     function testDepositCollateralAndMintDSCRevertsIfTokenIsntAllowed() public {
-        address dummyToken = makeAddr("token");
-        uint256 collateralAmount = 500;
+        ERC20Mock dummyToken = new ERC20Mock();
+        dummyToken.mint(USER, ERC20_STARTING_BALANCE);
         uint256 dscToMint = 1000;
+        vm.prank(USER);
         vm.expectRevert(DSCEngine.DSCEngine__NotAllowedToken.selector);
         // vm.expectRevert();
-        engine.depositCollateralAndMintDsc(dummyToken, collateralAmount, dscToMint);
+        engine.depositCollateralAndMintDsc(address(dummyToken), COLLATERAL_AMOUNT, dscToMint);
     }
 
     function testMintDSCRevertsIfAmountIsZero() public {
@@ -61,6 +72,8 @@ contract DSCEngineTest is Test {
         engine.mintDsc(0);
     }
 
+    // someone can mint a ridiculous amount of dsc at their initial mint after collateralizing a trivial amount of tokens
+    // think about this
     function testDepositCollateralAndMintDsc() public {
         vm.startPrank(USER);
         ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
@@ -68,9 +81,60 @@ contract DSCEngineTest is Test {
         vm.expectEmit();
         // vm.expectEmit(user, address(weth), 17e18);
         emit CollateralDeposited(USER, address(weth), COLLATERAL_AMOUNT);
-        engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, 123);
+        engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, 135);
         vm.stopPrank();
     }
+
+    // The expect emit path fails, since there's a Transfer emit being emitted?
+    // But the expectedCollateralValue approach succeeds
+    function testRedeemCollateral() public depositedCollateral {
+        uint256 expectedCollateralValueInUsd = 0;
+        uint256 collateralValueInUsd;
+        vm.prank(USER);
+        // vm.expectEmit();
+        engine.redeemCollateral(weth, COLLATERAL_AMOUNT);
+        (, collateralValueInUsd) = engine.getUserInformation(USER);
+        // emit CollateralRedeemed(USER, USER, weth, COLLATERAL_AMOUNT);
+        assertEq(expectedCollateralValueInUsd, collateralValueInUsd);
+    }
+
+    function testMintDsc() public depositedCollateral {
+        uint256 expectedDscMinted = 11000;
+        uint256 expectedCollateralValueInUsd = 24000e18;
+        uint256 dscMinted;
+        uint256 collateralValueInUsd;
+        vm.prank(USER);
+        engine.mintDsc(11000);
+        (dscMinted, collateralValueInUsd) = engine.getUserInformation(USER);
+        assertEq(expectedDscMinted, dscMinted);
+        assertEq(expectedCollateralValueInUsd, collateralValueInUsd);
+    }
+
+    // function testInitialMintDsc() public {
+    //     uint256 expectedDscMinted = 1e25 ether;
+    //     uint256 dscMinted;
+    //     vm.prank(USER);
+    //     engine.mintDsc(expectedDscMinted);
+    //     (dscMinted,) = engine.getUserInformation(USER);
+    //     assertEq(expectedDscMinted, dscMinted);
+    // }
+
+    function testMintDscRevertsIfHealthFactorBreaks() public {
+        vm.prank(USER);
+        vm.expectRevert(abi.encodeWithSelector(DSCEngine.DSCEngine__BreaksHealthFactor.selector, 0));
+        engine.mintDsc(1);
+    }
+
+    // Reduntant, sorta
+    // function testGetUserInformation() public depositedCollateral {
+    //     uint256 expectedDscMinted = 0;
+    //     uint256 expectedCollateralValueInUsd = 24000e18;
+    //     uint256 dscMinted;
+    //     uint256 collateralValueInUsd;
+    //     (dscMinted, collateralValueInUsd) = engine.getUserInformation(USER);
+    //     assertEq(expectedDscMinted, dscMinted);
+    //     assertEq(expectedCollateralValueInUsd, collateralValueInUsd);
+    // }
 
     /* End of My Tests */
 
