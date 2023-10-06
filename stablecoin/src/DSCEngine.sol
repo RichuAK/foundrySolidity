@@ -211,11 +211,11 @@ contract DSCEngine is ReentrancyGuard {
         _revertIfHealthFactorIsLow(msg.sender);
     }
 
-    function redeemCollateralForDsc(address tokenCollateralAddress, uint256 collateralAmount, uint256 dscamount)
+    function redeemCollateralForDsc(address tokenCollateralAddress, uint256 collateralAmount, uint256 dscAmount)
         external
     {
         // this more or less solves the issue of money getting locked in. You can burn your entire debt position and then fully redeem your collateral
-        burnDsc(dscamount);
+        burnDsc(dscAmount);
         redeemCollateral(tokenCollateralAddress, collateralAmount);
         //no need to check healthFactor since redeemCollateral() does it in the end already
     }
