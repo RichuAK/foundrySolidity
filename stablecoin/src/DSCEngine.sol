@@ -188,9 +188,9 @@ contract DSCEngine is ReentrancyGuard {
 
     // Liquidate a certain user's debt position if the health factor goes below MIN_HEALTH_FACTOR
     // Incentivize others to put in DSC by giving them bonuses
-    function liquidate(address user, address collateralToken, uint256 debtToCover)
+    function liquidate(address user, address collateralToken, uint256 debtToCoverInDsc)
         external
-        moreThanZero(debtToCover)
+        moreThanZero(debtToCoverInDsc)
         nonReentrant
     {
         // check user's health factor before proceeding
@@ -199,11 +199,11 @@ contract DSCEngine is ReentrancyGuard {
             revert DSCEngine__UserHealthFactorOk();
         }
 
-        uint256 tokenAmountFromDebtCovered = getTokenAmountFromUSD(collateralToken, debtToCover);
+        uint256 tokenAmountFromDebtCovered = getTokenAmountFromUSD(collateralToken, debtToCoverInDsc);
         uint256 bonusCollateral = (tokenAmountFromDebtCovered * LIQUIDATION_BONUS) / LIQUIDATION_PRECISION; // LIQUIDATION_PRECISION is used for the number 100
         uint256 totalCollateralToRedeem = tokenAmountFromDebtCovered + bonusCollateral;
         _redeemCollateral(user, msg.sender, collateralToken, totalCollateralToRedeem);
-        _burnDsc(user, msg.sender, debtToCover);
+        _burnDsc(user, msg.sender, debtToCoverInDsc);
         uint256 userUpdatedHealthFactor = _healthFactor(user);
         if (userUpdatedHealthFactor <= userHealthFactor) {
             revert DSCEngine__HealthFactorNotImproved();
