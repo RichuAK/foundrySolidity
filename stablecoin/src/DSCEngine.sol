@@ -67,7 +67,7 @@ contract DSCEngine is ReentrancyGuard {
     uint256 private constant PRECISION = 1e18;
     uint256 private constant LIQUIDATION_THRESHOLD = 50; // math in the end comes out to 200% collateral (yep)
     uint256 private constant LIQUIDATION_PRECISION = 100;
-    uint256 private constant MIN_HEALTH_FACTOR = 1; // this could be 1e18. Wait and see
+    uint256 private constant MIN_HEALTH_FACTOR = 1e18; // this could be 1e18. Wait and see. Update: it is
     uint256 private constant LIQUIDATION_BONUS = 10; // 10% bonus for liquidation
 
     /// @dev a mapping to specify the allowed tokens that can be accepted as collateral
