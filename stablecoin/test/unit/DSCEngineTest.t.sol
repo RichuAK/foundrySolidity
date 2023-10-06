@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.21;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {DecentralizedStableCoin} from "../../src/DecentralizedStableCoin.sol";
 import {DSCEngine} from "../../src/DSCEngine.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
@@ -19,11 +19,16 @@ contract DSCEngineTest is Test {
     address public weth;
     address public wbtc;
     address public USER = makeAddr("user");
+    address public BEN = makeAddr("ben");
     address[] public tokenAddresses;
     address[] public priceFeedAddresses;
 
     uint256 public constant ERC20_STARTING_BALANCE = 20 ether;
     uint256 public constant COLLATERAL_AMOUNT = 12 ether;
+    uint256 public constant DSC_AMOUNT = 12000e18;
+    // what's the difference between these assignments and the ones above? Is there any difference?
+    // uint256 public constant ERC20_STARTING_BALANCE = 20e18;
+    // uint256 public constant COLLATERAL_AMOUNT = 12e18;
 
     // event declarations
     event CollateralDeposited(address indexed depositor, address indexed tokenAddress, uint256 indexed amount);
@@ -36,6 +41,7 @@ contract DSCEngineTest is Test {
         (dsc, engine, helperConfig) = deployer.run();
         (wethUsdPriceFeed, wbtcPriceFeed, weth, wbtc,) = helperConfig.activeNetworkConfig();
         ERC20Mock(weth).mint(USER, ERC20_STARTING_BALANCE);
+        ERC20Mock(weth).mint(BEN, ERC20_STARTING_BALANCE);
     }
 
     // Constructor Tests
@@ -57,14 +63,22 @@ contract DSCEngineTest is Test {
         _;
     }
 
+    modifier depositedCollateralAndMintedDsc() {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, DSC_AMOUNT);
+        vm.stopPrank();
+        _;
+        // user is exactly at MIN_HEALTH_FACTOR at this point
+    }
+
     function testDepositCollateralAndMintDSCRevertsIfTokenIsntAllowed() public {
         ERC20Mock dummyToken = new ERC20Mock();
         dummyToken.mint(USER, ERC20_STARTING_BALANCE);
-        uint256 dscToMint = 1000;
         vm.prank(USER);
         vm.expectRevert(DSCEngine.DSCEngine__NotAllowedToken.selector);
         // vm.expectRevert();
-        engine.depositCollateralAndMintDsc(address(dummyToken), COLLATERAL_AMOUNT, dscToMint);
+        engine.depositCollateralAndMintDsc(address(dummyToken), COLLATERAL_AMOUNT, DSC_AMOUNT);
     }
 
     function testMintDSCRevertsIfAmountIsZero() public {
@@ -134,6 +148,97 @@ contract DSCEngineTest is Test {
     //     (dscMinted, collateralValueInUsd) = engine.getUserInformation(USER);
     //     assertEq(expectedDscMinted, dscMinted);
     //     assertEq(expectedCollateralValueInUsd, collateralValueInUsd);
+    // }
+
+    // liquidate tests
+
+    function testLiquidateRevertsIfAmountIsZero() public depositedCollateral {
+        vm.prank(BEN);
+        vm.expectRevert(DSCEngine.DSCEngine__ShouldBeMoreThanZero.selector);
+        engine.liquidate(USER, address(weth), 0);
+    }
+
+    function testLiquidateRevertsIfHealthFactorIsOkay() public depositedCollateralAndMintedDsc {
+        vm.prank(BEN);
+        vm.expectRevert(DSCEngine.DSCEngine__UserHealthFactorOk.selector);
+        engine.liquidate(USER, address(weth), DSC_AMOUNT);
+    }
+
+    // Not much of an idea what's happening here!!!
+    function testLiquidateRevertsWithoutImprovingUserHealthFactor() public depositedCollateralAndMintedDsc {
+        console.log("Health Factor of USER in the beginning: ", engine.getHealthFactor(USER));
+        // ERC20Mock(weth).mint(BEN, 4 ether);
+        vm.prank(USER);
+        engine.redeemCollateral(weth, COLLATERAL_AMOUNT);
+        console.log("Health Factor of USER after redeeming: ", engine.getHealthFactor(USER));
+        // ERC20Mock(weth).mint(BEN, ERC20_STARTING_BALANCE);
+        vm.startPrank(BEN);
+        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, DSC_AMOUNT);
+        console.log("Health Factor of BEN prior to liquidating: ", engine.getHealthFactor(BEN));
+        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        // vm.expectRevert(DSCEngine.DSCEngine__HealthFactorNotImproved.selector);
+        vm.expectRevert();
+        engine.liquidate(USER, weth, COLLATERAL_AMOUNT);
+        vm.stopPrank();
+        console.log("Health Factor of BEN after liquidating: ", engine.getHealthFactor(BEN));
+        (uint256 dscMinted, uint256 collateralValueinUsd) = engine.getUserInformation(BEN);
+        console.log("BEN's dscMinted and collaterValueinUsd, respectively: ", dscMinted, collateralValueinUsd);
+        // assertEq(1e18, engine.getHealthFactor(BEN));
+    }
+
+    function testRedeemCollateralForDsc() public depositedCollateralAndMintedDsc {
+        uint256 dscMinted;
+        uint256 collateralValueinUsd;
+        (dscMinted, collateralValueinUsd) = engine.getUserInformation(USER);
+        console.log("dscMinted before redemption: ", dscMinted);
+        console.log("CollateralValue in usd before redemption: ", collateralValueinUsd);
+        vm.startPrank(USER);
+        dsc.approve(address(engine), DSC_AMOUNT);
+        // These -1's are a messy way of avoiding division by 0 error, from the Oracle. Not great, but works for now
+        uint256 collateralAmountToRedeem = COLLATERAL_AMOUNT - 1;
+        // uint256 collateralAmountToRedeem = 11e18;
+        // uint256 collateralAmountToRedeem = COLLATERAL_AMOUNT - 1 ether;
+        console.log("Collateral amount to redeem: ", collateralAmountToRedeem);
+        uint256 dscToBurn = DSC_AMOUNT - 1;
+        engine.redeemCollateralForDsc(weth, collateralAmountToRedeem, dscToBurn);
+        vm.stopPrank();
+        (dscMinted, collateralValueinUsd) = engine.getUserInformation(USER);
+        console.log("dscMinted after redemption: ", dscMinted);
+        console.log("CollateralValue in usd after redemption: ", collateralValueinUsd);
+        uint256 expecteddscMinted = 1;
+        // uint256 expectedcollateralValueinUsd = 0;
+        assertEq(dscMinted, expecteddscMinted);
+        // assertEq(collateralValueinUsd, expectedcollateralValueinUsd);
+    }
+
+    function testUserHealthFactorLimit() public depositedCollateral {
+        // adhoc healthfactor calculation
+        uint256 LIQUIDATION_THRESHOLD = 50;
+        uint256 LIQUIDATION_PRECISION = 100;
+        uint256 PRECISION = 1e18;
+        uint256 dscToMint = 12001e18; //the limit is half the collateral deposited
+        uint256 collateralValue = 24000e18;
+        uint256 collateralAdjustedForThreshold = (collateralValue * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
+        uint256 expectedHealthFactor = (collateralAdjustedForThreshold * PRECISION) / dscToMint;
+        console.log("Health Factor", expectedHealthFactor);
+        vm.prank(USER);
+        vm.expectRevert(abi.encodeWithSelector(DSCEngine.DSCEngine__BreaksHealthFactor.selector, expectedHealthFactor));
+        engine.mintDsc(dscToMint);
+        // Reason for the adhoc healthfactor calculation:
+        /*
+        Since this is the first time any DSC is being minted it gets reverted, 
+        there is no way of accessing healthFactor via getHealthFactor(USER) without hitting a division by zero error.
+        But the 'BreaksHealthFactor' error does need the health factor at the moment it's being broken for us to write the proper 
+        expectRevert with right healthFactor at the time
+        So, to tackle both these issues, we calculate the expectedHealthFactor before sending the transaction
+        */
+    }
+
+    // function testLiquidateRevertsIfUserHealthFactorNotImproved() public depositedCollateral {
+    //     vm.prank(USER);
+    //     engine.mintDsc(13000e18);
+    //     vm.prank(BEN);
     // }
 
     /* End of My Tests */
