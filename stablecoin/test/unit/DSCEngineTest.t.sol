@@ -41,7 +41,7 @@ contract DSCEngineTest is Test {
         (dsc, engine, helperConfig) = deployer.run();
         (wethUsdPriceFeed, wbtcPriceFeed, weth, wbtc,) = helperConfig.activeNetworkConfig();
         ERC20Mock(weth).mint(USER, ERC20_STARTING_BALANCE);
-        ERC20Mock(weth).mint(BEN, ERC20_STARTING_BALANCE);
+        ERC20Mock(weth).mint(BEN, 2 * ERC20_STARTING_BALANCE);
     }
 
     // Constructor Tests
@@ -84,19 +84,6 @@ contract DSCEngineTest is Test {
     function testMintDSCRevertsIfAmountIsZero() public {
         vm.expectRevert(DSCEngine.DSCEngine__ShouldBeMoreThanZero.selector);
         engine.mintDsc(0);
-    }
-
-    // someone can mint a ridiculous amount of dsc at their initial mint after collateralizing a trivial amount of tokens
-    // think about this
-    function testDepositCollateralAndMintDsc() public {
-        vm.startPrank(USER);
-        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
-        // Act /Assert
-        vm.expectEmit();
-        // vm.expectEmit(user, address(weth), 17e18);
-        emit CollateralDeposited(USER, address(weth), COLLATERAL_AMOUNT);
-        engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, 135);
-        vm.stopPrank();
     }
 
     // The expect emit path fails, since there's a Transfer emit being emitted?
@@ -164,7 +151,22 @@ contract DSCEngineTest is Test {
         engine.liquidate(USER, address(weth), DSC_AMOUNT);
     }
 
+    function testDepositCollateralAndMintDsc() public {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        // Act /Assert
+        vm.expectEmit();
+        // vm.expectEmit(user, address(weth), 17e18);
+        emit CollateralDeposited(USER, address(weth), COLLATERAL_AMOUNT);
+        engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, 135);
+        vm.stopPrank();
+    }
+
     // Not much of an idea what's happening here!!!
+    // Or is the error in the code?
+
+    // update: possibly issues with collateralAmount being zero for USER
+    // calculating bonuses and everything!
     function testLiquidateRevertsWithoutImprovingUserHealthFactor() public depositedCollateralAndMintedDsc {
         console.log("Health Factor of USER in the beginning: ", engine.getHealthFactor(USER));
         // ERC20Mock(weth).mint(BEN, 4 ether);
@@ -173,18 +175,38 @@ contract DSCEngineTest is Test {
         console.log("Health Factor of USER after redeeming: ", engine.getHealthFactor(USER));
         // ERC20Mock(weth).mint(BEN, ERC20_STARTING_BALANCE);
         vm.startPrank(BEN);
-        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        ERC20Mock(weth).approve(address(engine), 2 * COLLATERAL_AMOUNT);
         engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, DSC_AMOUNT);
         console.log("Health Factor of BEN prior to liquidating: ", engine.getHealthFactor(BEN));
-        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        dsc.approve(address(engine), DSC_AMOUNT);
+        // ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
         // vm.expectRevert(DSCEngine.DSCEngine__HealthFactorNotImproved.selector);
         vm.expectRevert();
-        engine.liquidate(USER, weth, COLLATERAL_AMOUNT);
+        engine.liquidate(USER, weth, DSC_AMOUNT);
         vm.stopPrank();
         console.log("Health Factor of BEN after liquidating: ", engine.getHealthFactor(BEN));
         (uint256 dscMinted, uint256 collateralValueinUsd) = engine.getUserInformation(BEN);
         console.log("BEN's dscMinted and collaterValueinUsd, respectively: ", dscMinted, collateralValueinUsd);
         // assertEq(1e18, engine.getHealthFactor(BEN));
+    }
+
+    // to test a sunny day scenario on liquidate
+    // fails!!!!
+    function testLiquidateWorksFine() public depositedCollateralAndMintedDsc {
+        console.log("Health Factor of USER in the beginning: ", engine.getHealthFactor(USER));
+        vm.prank(USER);
+        engine.redeemCollateral(weth, (COLLATERAL_AMOUNT / 2));
+        console.log("Health Factor of USER after redeeming: ", engine.getHealthFactor(USER));
+        vm.startPrank(BEN);
+        ERC20Mock(weth).approve(address(engine), (2 * COLLATERAL_AMOUNT));
+        engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, DSC_AMOUNT);
+        dsc.approve(address(engine), (DSC_AMOUNT));
+        engine.liquidate(USER, weth, (DSC_AMOUNT));
+        vm.stopPrank();
+        console.log("Health Factor of USER after liquidating: ", engine.getHealthFactor(USER));
+        uint256 expectedTotalDSCMintedForUser = 6000e18;
+        (uint256 totalDscMintedForUser,) = engine.getUserInformation(USER);
+        assertEq(expectedTotalDSCMintedForUser, totalDscMintedForUser);
     }
 
     function testRedeemCollateralForDsc() public depositedCollateralAndMintedDsc {
