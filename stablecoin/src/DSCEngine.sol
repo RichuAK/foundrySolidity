@@ -199,9 +199,9 @@ contract DSCEngine is ReentrancyGuard {
             revert DSCEngine__UserHealthFactorOk();
         }
 
-        uint256 tokenAmountFromDebtCovered = getTokenAmountFromUSD(collateralToken, debtToCoverInDsc);
-        uint256 bonusCollateral = (tokenAmountFromDebtCovered * LIQUIDATION_BONUS) / LIQUIDATION_PRECISION; // LIQUIDATION_PRECISION is used for the number 100
-        uint256 totalCollateralToRedeem = tokenAmountFromDebtCovered + bonusCollateral;
+        uint256 tokenAmountFromDebtToCover = getTokenAmountFromUSD(collateralToken, debtToCoverInDsc);
+        uint256 bonusCollateral = (tokenAmountFromDebtToCover * LIQUIDATION_BONUS) / LIQUIDATION_PRECISION; // LIQUIDATION_PRECISION is used for the number 100
+        uint256 totalCollateralToRedeem = tokenAmountFromDebtToCover + bonusCollateral;
         _redeemCollateral(user, msg.sender, collateralToken, totalCollateralToRedeem);
         _burnDsc(user, msg.sender, debtToCoverInDsc);
         uint256 userUpdatedHealthFactor = _healthFactor(user);
