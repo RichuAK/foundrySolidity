@@ -198,10 +198,10 @@ contract DSCEngineTest is Test {
         engine.redeemCollateral(weth, (COLLATERAL_AMOUNT / 2));
         console.log("Health Factor of USER after redeeming: ", engine.getHealthFactor(USER));
         vm.startPrank(BEN);
-        ERC20Mock(weth).approve(address(engine), (2 * COLLATERAL_AMOUNT));
+        ERC20Mock(weth).approve(address(engine), (COLLATERAL_AMOUNT));
         engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, DSC_AMOUNT);
-        dsc.approve(address(engine), (DSC_AMOUNT));
-        engine.liquidate(USER, weth, (DSC_AMOUNT));
+        dsc.approve(address(engine), (DSC_AMOUNT / 2));
+        engine.liquidate(USER, weth, (DSC_AMOUNT / 2));
         vm.stopPrank();
         console.log("Health Factor of USER after liquidating: ", engine.getHealthFactor(USER));
         uint256 expectedTotalDSCMintedForUser = 6000e18;
