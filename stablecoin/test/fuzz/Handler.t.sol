@@ -5,6 +5,7 @@ pragma solidity ^0.8.21;
 import {Test} from "forge-std/Test.sol";
 import {DecentralizedStableCoin} from "../../src/DecentralizedStableCoin.sol";
 import {DSCEngine} from "../../src/DSCEngine.sol";
+import {ERC20Mock} from "@openzeppelin/contracts/mocks/ERC20Mock.sol";
 
 contract Handler is Test {
     DecentralizedStableCoin dsc;
@@ -26,6 +27,9 @@ contract Handler is Test {
         amountCollateral = bound(amountCollateral, 1, MAX_DEPOSIT_SIZE);
 
         address collateral = _getCollateralFromSeed(collateralSeed);
+        vm.startPrank(msg.sender);
+        ERC20Mock(collateral).mint(msg.sender, amountCollateral);
+        ERC20Mock(collateral).approve(address(engine), amountCollateral);
         engine.depositCollateral(collateral, amountCollateral);
     }
 
