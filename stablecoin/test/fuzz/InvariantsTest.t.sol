@@ -33,7 +33,7 @@ contract InvariantTest is StdInvariant, Test {
         targetContract(address(handler));
     }
 
-    function invariant_protocolMustHaveMoreValueThatTotalSupplyDollars() public view {
+    function invariant_protocolMustHaveMoreValueThanTotalSupplyDollars() public view {
         uint256 totalSupply = dsc.totalSupply();
         uint256 wethDeposted = ERC20Mock(weth).balanceOf(address(engine));
         uint256 wbtcDeposited = ERC20Mock(wbtc).balanceOf(address(engine));
@@ -48,5 +48,10 @@ contract InvariantTest is StdInvariant, Test {
         console.log("Time Redeem Function was called successfully: ", handler.redeemCount());
 
         assert(wethValue + wbtcValue >= totalSupply);
+    }
+
+    function invariant_gettersShouldNotRevert() public view {
+        engine.getCollateralTokens();
+        engine.getDsc();
     }
 }
