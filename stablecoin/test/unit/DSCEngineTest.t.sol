@@ -8,6 +8,7 @@ import {DSCEngine} from "../../src/DSCEngine.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {DeployDSC} from "../../script/DeployDSC.s.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/ERC20Mock.sol";
+import {MockV3Aggregator} from "../mocks/MockV3Aggregator.sol";
 
 contract DSCEngineTest is Test {
     DeployDSC public deployer;
@@ -41,7 +42,7 @@ contract DSCEngineTest is Test {
         (dsc, engine, helperConfig) = deployer.run();
         (wethUsdPriceFeed, wbtcPriceFeed, weth, wbtc,) = helperConfig.activeNetworkConfig();
         ERC20Mock(weth).mint(USER, ERC20_STARTING_BALANCE);
-        ERC20Mock(weth).mint(BEN, 2 * ERC20_STARTING_BALANCE);
+        ERC20Mock(weth).mint(BEN, 10 * ERC20_STARTING_BALANCE);
     }
 
     // Constructor Tests
@@ -194,14 +195,15 @@ contract DSCEngineTest is Test {
     // fails!!!!
     function testLiquidateWorksFine() public depositedCollateralAndMintedDsc {
         console.log("Health Factor of USER in the beginning: ", engine.getHealthFactor(USER));
-        vm.prank(USER);
-        engine.redeemCollateral(weth, (COLLATERAL_AMOUNT / 2));
-        console.log("Health Factor of USER after redeeming: ", engine.getHealthFactor(USER));
+        // vm.prank(USER);
+        // engine.redeemCollateral(weth, (COLLATERAL_AMOUNT / 2));
+        // console.log("Health Factor of USER after redeeming: ", engine.getHealthFactor(USER));
+        MockV3Aggregator(wethUsdPriceFeed).updateAnswer(1000e8);
         vm.startPrank(BEN);
-        ERC20Mock(weth).approve(address(engine), (COLLATERAL_AMOUNT));
-        engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, DSC_AMOUNT);
-        dsc.approve(address(engine), (DSC_AMOUNT / 2));
-        engine.liquidate(USER, weth, (DSC_AMOUNT / 2));
+        ERC20Mock(weth).approve(address(engine), (5 * COLLATERAL_AMOUNT));
+        engine.depositCollateralAndMintDsc(weth, 5 * COLLATERAL_AMOUNT, DSC_AMOUNT);
+        dsc.approve(address(engine), (DSC_AMOUNT));
+        engine.liquidate(USER, weth, (DSC_AMOUNT));
         vm.stopPrank();
         console.log("Health Factor of USER after liquidating: ", engine.getHealthFactor(USER));
         uint256 expectedTotalDSCMintedForUser = 6000e18;
