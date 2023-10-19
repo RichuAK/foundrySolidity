@@ -171,9 +171,10 @@ contract DSCEngineTest is Test {
     function testLiquidateRevertsWithoutImprovingUserHealthFactor() public depositedCollateralAndMintedDsc {
         console.log("Health Factor of USER in the beginning: ", engine.getHealthFactor(USER));
         // ERC20Mock(weth).mint(BEN, 4 ether);
-        vm.prank(USER);
-        engine.redeemCollateral(weth, COLLATERAL_AMOUNT);
-        console.log("Health Factor of USER after redeeming: ", engine.getHealthFactor(USER));
+        // vm.prank(USER);
+        // engine.redeemCollateral(weth, COLLATERAL_AMOUNT);
+        MockV3Aggregator(wethUsdPriceFeed).updateAnswer(1000e8);
+        console.log("Health Factor of USER after price update: ", engine.getHealthFactor(USER));
         // ERC20Mock(weth).mint(BEN, ERC20_STARTING_BALANCE);
         vm.startPrank(BEN);
         ERC20Mock(weth).approve(address(engine), 2 * COLLATERAL_AMOUNT);
