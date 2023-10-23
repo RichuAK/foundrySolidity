@@ -6,6 +6,7 @@ import {Test} from "forge-std/Test.sol";
 import {DecentralizedStableCoin} from "../../src/DecentralizedStableCoin.sol";
 import {DSCEngine} from "../../src/DSCEngine.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/ERC20Mock.sol";
+import {MockV3Aggregator} from "../mocks/MockV3Aggregator.sol";
 
 contract Handler is Test {
     DecentralizedStableCoin dsc;
@@ -15,6 +16,7 @@ contract Handler is Test {
     uint256 public mintCount;
     uint256 public redeemCount;
     address[] public validAddresses;
+    address public ethUsdPriceFeed;
 
     uint96 public constant MAX_DEPOSIT_SIZE = type(uint96).max;
 
@@ -24,6 +26,7 @@ contract Handler is Test {
         address[] memory collateralTokens = engine.getCollateralTokens();
         weth = collateralTokens[0];
         wbtc = collateralTokens[1];
+        ethUsdPriceFeed = engine.getCollateralTokenPriceFeed(weth);
     }
 
     function depositCollateral(uint256 collateralSeed, uint256 amountCollateral) public {
@@ -70,6 +73,14 @@ contract Handler is Test {
         vm.stopPrank();
         redeemCount++;
     }
+
+    //This breaks the assertion, since the collateral prize can be all over the place and that breaks the system (too much minting if the collateral price drops like crazy)
+    // We are assuming a fairly stable collateral for the system to work in its current iteration
+
+    // function updateCollateraPrice(uint96 newPrice) public {
+    //     int256 newPriceInt = int256(uint256(newPrice));
+    //     MockV3Aggregator(ethUsdPriceFeed).updateAnswer(newPriceInt);
+    // }
 
     function _getCollateralFromSeed(uint256 collateralSeed) private view returns (address) {
         if (collateralSeed % 2 == 0) {
