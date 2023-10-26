@@ -13,17 +13,20 @@ contract UpgradeBox is Script {
 
         vm.startBroadcast();
         BoxV2 newBox = new BoxV2();
-        address proxy = upgradeBox(mostRecentlyDeployed, address(newBox));
+        /*address proxy = */
+        upgradeBox(mostRecentlyDeployed, address(newBox));
         vm.stopBroadcast();
-        return proxy;
+        // return proxy;
+        return mostRecentlyDeployed;
     }
 
-    function upgradeBox(address proxyAddress, address newBox) public returns (address) {
+    function upgradeBox(address proxyAddress, address newBox) public /*returns (address)*/ {
         BoxV1 proxy = BoxV1(proxyAddress);
         vm.broadcast();
         proxy.upgradeToAndCall(newBox, "");
-        return proxyAddress;
+        // return proxyAddress;
         // you're kinda returning the same address that you recieved as an argument.
         //TODO: See if you can refactor and simplify this
+        // Update: Done. Works fine
     }
 }
