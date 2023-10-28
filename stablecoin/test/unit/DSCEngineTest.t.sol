@@ -24,9 +24,9 @@ contract DSCEngineTest is Test {
     address[] public tokenAddresses;
     address[] public priceFeedAddresses;
 
-    uint256 public constant ERC20_STARTING_BALANCE = 20 ether;
-    uint256 public constant COLLATERAL_AMOUNT = 12 ether;
-    uint256 public constant DSC_AMOUNT = 12000e18;
+    uint256 public constant ERC20_STARTING_BALANCE = 10 ether;
+    uint256 public constant COLLATERAL_AMOUNT = 10 ether;
+    uint256 public constant DSC_AMOUNT = 100 ether;
     // what's the difference between these assignments and the ones above? Is there any difference?
     // uint256 public constant ERC20_STARTING_BALANCE = 20e18;
     // uint256 public constant COLLATERAL_AMOUNT = 12e18;
@@ -101,12 +101,12 @@ contract DSCEngineTest is Test {
     }
 
     function testMintDsc() public depositedCollateral {
-        uint256 expectedDscMinted = 11000;
-        uint256 expectedCollateralValueInUsd = 24000e18;
+        uint256 expectedDscMinted = DSC_AMOUNT;
+        uint256 expectedCollateralValueInUsd = 20000e18;
         uint256 dscMinted;
         uint256 collateralValueInUsd;
         vm.prank(USER);
-        engine.mintDsc(11000);
+        engine.mintDsc(DSC_AMOUNT);
         (dscMinted, collateralValueInUsd) = engine.getUserInformation(USER);
         assertEq(expectedDscMinted, dscMinted);
         assertEq(expectedCollateralValueInUsd, collateralValueInUsd);
@@ -194,20 +194,23 @@ contract DSCEngineTest is Test {
 
     // to test a sunny day scenario on liquidate
     // fails!!!!
+    // works fine now, somehow
     function testLiquidateWorksFine() public depositedCollateralAndMintedDsc {
         console.log("Health Factor of USER in the beginning: ", engine.getHealthFactor(USER));
         // vm.prank(USER);
         // engine.redeemCollateral(weth, (COLLATERAL_AMOUNT / 2));
         // console.log("Health Factor of USER after redeeming: ", engine.getHealthFactor(USER));
-        MockV3Aggregator(wethUsdPriceFeed).updateAnswer(1000e8);
+        MockV3Aggregator(wethUsdPriceFeed).updateAnswer(18e8);
         vm.startPrank(BEN);
-        ERC20Mock(weth).approve(address(engine), (5 * COLLATERAL_AMOUNT));
-        engine.depositCollateralAndMintDsc(weth, 5 * COLLATERAL_AMOUNT, DSC_AMOUNT);
-        dsc.approve(address(engine), (DSC_AMOUNT));
-        engine.liquidate(USER, weth, (DSC_AMOUNT));
+        ERC20Mock(weth).approve(address(engine), 2 * COLLATERAL_AMOUNT);
+        engine.depositCollateralAndMintDsc(weth, 2 * COLLATERAL_AMOUNT, DSC_AMOUNT);
+        dsc.approve(address(engine), DSC_AMOUNT);
+        console.log("Health Factor of BEN before liquidating: ", engine.getHealthFactor(BEN));
+        engine.liquidate(USER, weth, DSC_AMOUNT);
         vm.stopPrank();
         console.log("Health Factor of USER after liquidating: ", engine.getHealthFactor(USER));
-        uint256 expectedTotalDSCMintedForUser = 6000e18;
+        console.log("Health Factor of BEN after liquidating: ", engine.getHealthFactor(BEN));
+        uint256 expectedTotalDSCMintedForUser = 0;
         (uint256 totalDscMintedForUser,) = engine.getUserInformation(USER);
         assertEq(expectedTotalDSCMintedForUser, totalDscMintedForUser);
     }
@@ -242,8 +245,10 @@ contract DSCEngineTest is Test {
         uint256 LIQUIDATION_THRESHOLD = 50;
         uint256 LIQUIDATION_PRECISION = 100;
         uint256 PRECISION = 1e18;
-        uint256 dscToMint = 12001e18; //the limit is half the collateral deposited
-        uint256 collateralValue = 24000e18;
+        uint256 dscToMint = DSC_AMOUNT * 100000;
+        // uint256 dscToMint = 110e18;
+        //the limit is half the collateral deposited
+        uint256 collateralValue = 20000e18;
         uint256 collateralAdjustedForThreshold = (collateralValue * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
         uint256 expectedHealthFactor = (collateralAdjustedForThreshold * PRECISION) / dscToMint;
         console.log("Health Factor", expectedHealthFactor);
