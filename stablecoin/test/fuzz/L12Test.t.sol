@@ -5,7 +5,7 @@ pragma solidity ^0.8.21;
 import {Test, console} from "forge-std/Test.sol";
 // import {StdInvariant} from "forge-std/StdInvariant.sol";
 
-import {LessonTwelveHelper} from "../../src/L12/12-LessonHelper.sol";
+import {LessonTwelveHelper} from "../../src/challenges/12-LessonHelper.sol";
 
 contract L12Test is Test {
     LessonTwelveHelper hell;
