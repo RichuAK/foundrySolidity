@@ -3,13 +3,13 @@ pragma solidity ^0.8.18;
 
 contract AFoundryCourseChallenge {
     constructor(address FoundryCourseNftNft) {}
-    function description() external view returns (string memory) {}
+    function description() external view virtual returns (string memory) {}
 
-    function extraDescription(address user) external view returns (string memory) {}
+    function extraDescription(address user) external view virtual returns (string memory) {}
 
-    function specialImage() external view returns (string memory) {}
+    function specialImage() external view virtual returns (string memory) {}
 
-    function attribute() external view returns (string memory) {}
+    function attribute() external view virtual returns (string memory) {}
 
     function _updateAndRewardSolver(string memory twitterHandleOfSolver) internal {}
 

@@ -43,7 +43,7 @@ contract LessonTwelveHelper {
         _;
     }
 
-    function hellFunc(uint128 numberr) public view onlyOwner returns (uint256) {
+    function hellFunc(uint128 numberr) public view returns (uint256) {
         uint256 numberrr = uint256(numberr);
         Int number = Int.wrap(numberrr);
         if (Int.unwrap(number) == 1) {
