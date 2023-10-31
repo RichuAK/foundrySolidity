@@ -55,3 +55,6 @@
 [submodule "upgrades/lib/foundry-devops"]
 	path = upgrades/lib/foundry-devops
 	url = https://github.com/Cyfrin/foundry-devops
+[submodule "dao/lib/forge-std"]
+	path = dao/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
