@@ -7,8 +7,11 @@ import /* {ERC20Permit} from */ "@openzeppelin/contracts/token/ERC20/extensions/
 import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
 contract GovernanceToken is ERC20, ERC20Permit, ERC20Votes {
-    constructor() ERC20("Governance Token", "GTK") ERC20Permit("Governance Token") {
-        _mint(msg.sender, 100 ether); //mints these many tokens and assigns them to the deployer
+    constructor(address initialSupplyReciever, uint256 initialSupply)
+        ERC20("Governance Token", "GTK")
+        ERC20Permit("Governance Token")
+    {
+        _mint(initialSupplyReciever, initialSupply); //mints these many tokens and assigns them to the initialSupplyReciever
     }
 
     // The following functions are overrides required by Solidity.
