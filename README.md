@@ -1,4 +1,4 @@
-# foundrySolidityProjects
+# Foundry Solidity
 
 Solidity projects using Foundry.
 
