@@ -2,7 +2,7 @@
 
 Solidity projects using Foundry.
 
-Based on Patrick Collins' [Course](https://github.com/Cyfrin/foundry-full-course-f23).
+Based on Patrick Collins' [Solidity Foundry Course](https://github.com/Cyfrin/foundry-full-course-f23).
 
 Course completed and all challenges solved.
 
